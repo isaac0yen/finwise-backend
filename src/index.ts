@@ -9,6 +9,8 @@ import withdrawalRoutes from './routes/withdrawal.routes';
 import transferRoutes from './routes/transfer.routes';
 import adminRoutes from './routes/admin.routes';
 import cors from 'cors';
+import swaggerUi from 'swagger-ui-express';
+import swaggerDocument from '../swagger.json';
 
 dotenv.config();
 
@@ -25,8 +27,11 @@ DBConnect().then(() => {
   app.use(express.urlencoded({ extended: true }));
 
   app.get('/', (res: Response) => {
-    res.send('<html><body><h1>Welcome to Finwise</h1><p>and no... our docs are definitely not on <a href="http://localhost:3000/docs">http://localhost:3000/docs</a></p></body></html>');
+    res.send('<html><body><h1>Welcome to Finwise</h1><p>Our API documentation is available at <a href="/api-docs">/api-docs</a></p></body></html>');
   });
+
+  // Swagger UI setup
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
   app.use('/api/auth', authRoutes);
 
