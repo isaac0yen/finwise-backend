@@ -1,0 +1,702 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "FinWise API",
+    "version": "1.0.0",
+    "description": "API documentation for the FinWise application."
+  },
+  "servers": [
+    {
+      "url": "/api",
+      "description": "Main API base path"
+    }
+  ],
+  "tags": [
+    {"name": "Admin", "description": "Admin operations"},
+    {"name": "Auth", "description": "Authentication and User Management"},
+    {"name": "Dashboard", "description": "User dashboard data"},
+    {"name": "Deposit", "description": "Fiat deposit operations"},
+    {"name": "Transactions", "description": "User transaction history"},
+    {"name": "Transfer", "description": "Wallet-to-wallet transfers"},
+    {"name": "Withdrawal", "description": "Fiat withdrawal operations"}
+  ],
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "boolean", "example": false },
+          "message": { "type": "string" }
+        }
+      },
+      "SuccessResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "boolean", "example": true },
+          "message": { "type": "string" }
+        }
+      },
+      "PendingWithdrawal": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 1 },
+          "user_id": { "type": "integer", "example": 101 },
+          "wallet_id": { "type": "integer", "example": 201 },
+          "amount": { "type": "number", "format": "float", "example": 1000.50 },
+          "currency": { "type": "string", "example": "NGN" },
+          "bank_name": { "type": "string", "example": "Test Bank Plc" },
+          "account_number": { "type": "string", "example": "0123456789" },
+          "account_name": { "type": "string", "example": "Isaac Oyeniyi Test" },
+          "status": { "type": "string", "enum": ["PENDING_REVIEW", "APPROVED", "REJECTED", "PROCESSING", "COMPLETED", "FAILED"], "example": "PENDING_REVIEW" },
+          "rejection_reason": { "type": "string", "nullable": true, "example": "Invalid account details" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ProcessWithdrawalRequest": {
+        "type": "object",
+        "required": ["action"],
+        "properties": {
+          "action": { "type": "string", "enum": ["APPROVE", "REJECT"], "example": "APPROVE" },
+          "reason": { "type": "string", "description": "Required if action is REJECT", "example": "Documentation not sufficient." }
+        }
+      },
+      "SignUpRequest": {
+        "type": "object",
+        "required": ["nin", "email"],
+        "properties": {
+          "nin": { "type": "string", "description": "National Identification Number", "example": "12345678901" },
+          "email": { "type": "string", "format": "email", "example": "user@example.com" }
+        }
+      },
+      "SignUpResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "boolean", "example": true },
+          "message": { "type": "string", "example": "User signed up successfully. Please verify your email." },
+          "token": { "type": "string", "description": "JWT for email verification & setting password", "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }
+        }
+      },
+      "VerifyEmailRequest": {
+        "type": "object",
+        "required": ["code"],
+        "properties": {
+          "code": { "type": "string", "description": "6-digit verification code sent to email", "example": "123456" }
+        }
+      },
+      "SetPasswordRequest": {
+        "type": "object",
+        "required": ["password"],
+        "properties": {
+          "password": { "type": "string", "format": "password", "description": "User's new password (min 8 chars, 1 uppercase, 1 number)", "example": "Password123" }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string", "format": "email", "example": "user@example.com" },
+          "password": { "type": "string", "format": "password", "example": "Password123" }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "boolean", "example": true },
+          "message": { "type": "string", "example": "Login successful" },
+          "access_token": { "type": "string", "description": "JWT for accessing protected routes", "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." },
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "integer", "example": 1 },
+              "email": { "type": "string", "format": "email", "example": "user@example.com" },
+              "first_name": { "type": "string", "nullable": true, "example": "John" },
+              "last_name": { "type": "string", "nullable": true, "example": "Doe" },
+              "is_admin": {"type": "boolean", "example": false }
+            }
+          }
+        }
+      },
+      "DashboardUser": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 1 },
+          "first_name": { "type": "string", "nullable": true, "example": "John" },
+          "last_name": { "type": "string", "nullable": true, "example": "Doe" },
+          "email": { "type": "string", "format": "email", "example": "user@example.com" },
+          "naira_balance": { "type": "number", "format": "float", "example": 50000.75 }
+        }
+      },
+      "PortfolioItem": {
+        "type": "object",
+        "properties": {
+          "token": { "type": "string", "example": "FINTOKEN" },
+          "institution": { "type": "string", "example": "FinWise Inc." },
+          "balance": { "type": "number", "format": "float", "example": 100.00 },
+          "price": { "type": "number", "format": "float", "example": 1.50 },
+          "value": { "type": "number", "format": "float", "example": 150.00 }
+        }
+      },
+      "MarketTrendItem": {
+        "type": "object",
+        "properties": {
+          "token": { "type": "string", "example": "FINTOKEN" },
+          "price": { "type": "number", "format": "float", "example": 1.50 },
+          "volume": { "type": "number", "format": "float", "example": 1000000 },
+          "liquidity_pool": { "type": "number", "format": "float", "example": 500000 },
+          "volatility": { "type": "number", "format": "float", "example": 0.05 },
+          "sentiment": { "type": "string", "example": "NEUTRAL" }
+        }
+      },
+      "DashboardResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "boolean", "example": true },
+          "user": { "$ref": "#/components/schemas/DashboardUser" },
+          "portfolio": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/PortfolioItem" }
+          },
+          "marketTrends": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/MarketTrendItem" }
+          }
+        }
+      },
+      "InitializeDepositRequest": {
+        "type": "object",
+        "required": ["amount"],
+        "properties": {
+          "amount": { "type": "number", "format": "float", "description": "Amount to deposit in NGN", "example": 10000.00 }
+        }
+      },
+      "InitializeDepositResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "boolean", "example": true },
+          "authorization_url": { "type": "string", "format": "url", "example": "https://checkout.paystack.com/..." },
+          "reference": { "type": "string", "example": "test_ref_1625070000000_abcdef" }
+        }
+      },
+      "TransactionType": {
+        "type": "string",
+        "enum": ["DEPOSIT", "WITHDRAWAL", "TRANSFER_SENT", "TRANSFER_RECEIVED"]
+      },
+      "TransactionStatus": {
+        "type": "string",
+        "enum": ["PENDING", "SUCCESS", "FAILED"]
+      },
+      "Transaction": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 1 },
+          "wallet_id": { "type": "integer", "example": 101 },
+          "user_id": { "type": "integer", "example": 1 },
+          "type": { "$ref": "#/components/schemas/TransactionType" },
+          "amount": { "type": "number", "format": "float", "example": 500.00 },
+          "status": { "$ref": "#/components/schemas/TransactionStatus" },
+          "reference": { "type": "string", "nullable": true, "example": "txn_123abc" },
+          "description": { "type": "string", "nullable": true, "example": "Monthly subscription" },
+          "related_wallet_id": { "type": "integer", "nullable": true, "description": "Relevant for transfers", "example": 102 },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "TransactionListResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "boolean", "example": true },
+          "transactions": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Transaction" }
+          }
+        }
+      },
+      "CreateTransferRequest": {
+        "type": "object",
+        "required": ["recipientEmail", "amount"],
+        "properties": {
+          "recipientEmail": { "type": "string", "format": "email", "description": "Email address of the recipient", "example": "receiver@example.com" },
+          "amount": { "type": "number", "format": "float", "description": "Amount to transfer in NGN", "example": 1000.00 },
+          "currency": { "type": "string", "description": "Currency of the transfer (currently only NGN supported)", "default": "NGN", "example": "NGN" }
+        }
+      },
+      "RequestWithdrawalPayload": {
+        "type": "object",
+        "required": [
+          "amount",
+          "bank_code",
+          "account_number"
+        ],
+        "properties": {
+          "amount": {
+            "type": "number",
+            "description": "Amount to withdraw in NGN",
+            "example": 5000
+          },
+          "bank_code": {
+            "type": "string",
+            "description": "Paystack bank code for the recipient bank",
+            "example": "058"
+          },
+          "account_number": {
+            "type": "string",
+            "description": "Recipient bank account number",
+            "example": "0123456789"
+          }
+        }
+      },
+      "Bank": {
+        "type": "object",
+        "properties": {
+            "id": {"type": "integer", "example": 173},
+            "name": {"type": "string", "example": "Access Bank"},
+            "slug": {"type": "string", "example": "access-bank"},
+            "code": {"type": "string", "example": "044"},
+            "longcode": {"type": "string", "example": "044150062"},
+            "country": {"type": "string", "example": "Nigeria"},
+            "currency": {"type": "string", "example": "NGN"},
+            "type": {"type": "string", "example": "nuban"},
+            "active": {"type": "boolean", "example": true}
+        }
+      },
+      "BankListResponse": {
+          "type": "object",
+          "properties": {
+              "status": {"type": "boolean", "example": true},
+              "message": {"type": "string", "example": "Banks retrieved"},
+              "data": {
+                  "type": "array",
+                  "items": {"$ref": "#/components/schemas/Bank"}
+              }
+          }
+      },
+      "ResolveAccountRequest": {
+          "type": "object",
+          "required": ["account_number", "bank_code"],
+          "properties": {
+              "account_number": {"type": "string", "example": "0123456789"},
+              "bank_code": {"type": "string", "example": "058"}
+          }
+      },
+      "ResolveAccountResponseData": {
+          "type": "object",
+          "properties": {
+              "account_number": {"type": "string", "example": "0000000000"},
+              "account_name": {"type": "string", "example": "JOHN DOE"},
+              "bank_id": {"type": "integer", "example": 1}
+          }
+      },
+      "ResolveAccountResponse": {
+          "type": "object",
+          "properties": {
+              "status": {"type": "boolean", "example": true},
+              "message": {"type": "string", "example": "Account details retrieved"},
+              "data": {"$ref": "#/components/schemas/ResolveAccountResponseData"}
+          }
+      }
+    },
+    "responses": {
+      "UnauthorizedError": {
+        "description": "Unauthorized. Token is missing or invalid.",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      },
+      "ForbiddenError": {
+        "description": "Forbidden. User does not have necessary permissions.",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      },
+      "InternalServerError": {
+        "description": "Internal Server Error.",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      },
+      "NotFoundError": {
+        "description": "Resource not found.",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      },
+      "BadRequestError": {
+        "description": "Bad Request. Invalid input parameters.",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "paths": {
+    "/admin/withdrawals/pending": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Get all pending withdrawal requests",
+        "description": "Retrieves a list of all withdrawal requests that are currently in 'PENDING_REVIEW' status. Requires admin privileges.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "A list of pending withdrawal requests.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/PendingWithdrawal" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/UnauthorizedError" },
+          "403": { "$ref": "#/components/responses/ForbiddenError" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/admin/withdrawals/{id}/process": {
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Process a withdrawal request (approve/reject)",
+        "description": "Allows an admin to approve or reject a specific withdrawal request. Requires admin privileges.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID of the withdrawal request to process.",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ProcessWithdrawalRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Withdrawal request processed successfully.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/SuccessResponse" } }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequestError" },
+          "401": { "$ref": "#/components/responses/UnauthorizedError" },
+          "403": { "$ref": "#/components/responses/ForbiddenError" },
+          "404": { "$ref": "#/components/responses/NotFoundError" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/auth/sign-up": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "User sign-up",
+        "description": "Registers a new user with NIN and email. Sends a verification code to the email.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SignUpRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User signed up successfully. A verification token is returned.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SignUpResponse" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequestError" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/auth/send-email-verification": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Resend email verification code",
+        "description": "Resends a new verification code to the authenticated user's email address. User must be authenticated with the initial sign-up token.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Verification code sent successfully.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/UnauthorizedError" },
+          "400": { "$ref": "#/components/responses/BadRequestError" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/auth/verify-email": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Verify user's email address",
+        "description": "Verifies the user's email using the code sent. User must be authenticated with the initial sign-up token.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/VerifyEmailRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Email verified successfully.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessResponse" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequestError" },
+          "401": { "$ref": "#/components/responses/UnauthorizedError" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/auth/set-password": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Set user's password",
+        "description": "Sets the password for a user whose email has been verified. User must be authenticated with the initial sign-up token.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SetPasswordRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password set successfully.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessResponse" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequestError" },
+          "401": { "$ref": "#/components/responses/UnauthorizedError" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "User login",
+        "description": "Authenticates a user with email and password, returning a JWT access token.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful. Returns access token and user details.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginResponse" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequestError" },
+          "401": { "$ref": "#/components/responses/UnauthorizedError" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/dashboard": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Get user dashboard data",
+        "description": "Retrieves aggregated data for the authenticated user's dashboard, including user info, wallet balance, token portfolio, and market trends.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved dashboard data.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/DashboardResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/UnauthorizedError" },
+          "404": { "$ref": "#/components/responses/NotFoundError" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/deposit/initialize": {
+      "post": {
+        "tags": ["Deposit"],
+        "summary": "Initialize a deposit transaction",
+        "description": "Starts the deposit process by initializing a transaction with Paystack and returns an authorization URL for the user to complete payment.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/InitializeDepositRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deposit initialized successfully. Returns Paystack authorization URL and reference.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/InitializeDepositResponse" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequestError" },
+          "401": { "$ref": "#/components/responses/UnauthorizedError" },
+          "404": { "$ref": "#/components/responses/NotFoundError" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/deposit/verify/{reference}": {
+      "get": {
+        "tags": ["Deposit"],
+        "summary": "Verify a deposit transaction",
+        "description": "Verifies the status of a deposit transaction with Paystack using the provided reference. This endpoint is typically for manual verification or client-side redirection confirmation. Paystack webhooks are preferred for server-to-server confirmation.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "reference",
+            "in": "path",
+            "required": true,
+            "description": "Paystack transaction reference to verify.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deposit verification status.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/SuccessResponse" } } 
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequestError" }, 
+          "401": { "$ref": "#/components/responses/UnauthorizedError" },
+          "404": { "$ref": "#/components/responses/NotFoundError" }, 
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/transactions": {
+      "get": {
+        "tags": ["Transactions"],
+        "summary": "Get wallet transactions",
+        "description": "Retrieves a list of all transactions associated with the authenticated user's wallet.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "A list of transactions.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TransactionListResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/UnauthorizedError" },
+          "404": { "$ref": "#/components/responses/NotFoundError" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/transfer": {
+      "post": {
+        "tags": ["Transfer"],
+        "summary": "Create a wallet-to-wallet transfer",
+        "description": "Allows an authenticated user to transfer NGN funds from their wallet to another user's wallet within the platform.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateTransferRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transfer successful.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessResponse" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequestError" }, 
+          "401": { "$ref": "#/components/responses/UnauthorizedError" },
+          "404": { "$ref": "#/components/responses/NotFoundError" }, 
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/withdrawal/request": {
+      "post": {
+        "tags": ["Withdrawal"],
+        "summary": "Request a withdrawal",
+        "description": "Allows an authenticated user to request a withdrawal of NGN funds from their wallet to an external bank account. The request will be subject to admin review.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RequestWithdrawalPayload" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Withdrawal request submitted successfully and is pending review.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessResponse" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequestError" }, 
+          "401": { "$ref": "#/components/responses/UnauthorizedError" },
+          "404": { "$ref": "#/components/responses/NotFoundError" }, 
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    },
+    "/withdrawal/banks": {
+      "get": {
+        "tags": ["Withdrawal"],
+        "summary": "Get list of supported banks",
+        "description": "Retrieves a list of banks supported for withdrawals, typically sourced from Paystack.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved list of banks.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BankListResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/UnauthorizedError" },
+          "500": { "$ref": "#/components/responses/InternalServerError" } 
+        }
+      }
+    },
+    "/withdrawal/resolve-account": {
+      "post": {
+        "tags": ["Withdrawal"],
+        "summary": "Resolve bank account details",
+        "description": "Verifies bank account details (account number and bank code) with Paystack and returns the account name if valid.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ResolveAccountRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Account details resolved successfully.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ResolveAccountResponse" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequestError" }, 
+          "401": { "$ref": "#/components/responses/UnauthorizedError" },
+          "500": { "$ref": "#/components/responses/InternalServerError" }
+        }
+      }
+    }
+  }
+}

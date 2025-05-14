@@ -1,0 +1,31 @@
+{
+  "1. Signing Up User": "Completed",
+  "1. Sign Up Response": {
+    "status": true,
+    "message": "User created successfully",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJpc2FhY295ZW5peWkwNkBnbWFpbC5jb20iLCJpYXQiOjE3NDcyMzUwNDMsImV4cCI6MTc0NzMyMTQ0M30.BEiaoc7onzCkq3fFqlIrJ94QfHJB6fYwspD7FtIetgM"
+  },
+  "signup_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJpc2FhY295ZW5peWkwNkBnbWFpbC5jb20iLCJpYXQiOjE3NDcyMzUwNDMsImV4cCI6MTc0NzMyMTQ0M30.BEiaoc7onzCkq3fFqlIrJ94QfHJB6fYwspD7FtIetgM",
+  "2. Setting Password": "Completed",
+  "2. Set Password Response": {
+    "status": true,
+    "message": "Password set successfully"
+  },
+  "3. Logging In User": "Completed",
+  "3. Login Response": {
+    "status": true,
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJpc2FhY295ZW5peWkwNkBnbWFpbC5jb20iLCJmaXJzdF9uYW1lIjoiSVNBQUMiLCJsYXN0X25hbWUiOiJPWUVOSVlJIiwiaWF0IjoxNzQ3MjM1MDQzLCJleHAiOjE3NDczMjE0NDN9.XgSXfFTBKmZXTSt7eWqsmajPw__8AFnFgHiuBU2dltg"
+  },
+  "login_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJpc2FhY295ZW5peWkwNkBnbWFpbC5jb20iLCJmaXJzdF9uYW1lIjoiSVNBQUMiLCJsYXN0X25hbWUiOiJPWUVOSVlJIiwiaWF0IjoxNzQ3MjM1MDQzLCJleHAiOjE3NDczMjE0NDN9.XgSXfFTBKmZXTSt7eWqsmajPw__8AFnFgHiuBU2dltg",
+  "4. Initializing Deposit": "Completed",
+  "4. Initialize Deposit Response": {
+    "status": true,
+    "authorization_url": "https://checkout.paystack.com/u54ugwgssabama9",
+    "reference": "bz0hajwx66"
+  },
+  "5. Verifying Deposit": "Completed",
+  "5. Verify Deposit Error": {
+    "status": false,
+    "message": "Deposit not successful"
+  }
+}
