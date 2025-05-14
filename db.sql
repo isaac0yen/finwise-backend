@@ -4,13 +4,15 @@ CREATE TABLE IF NOT EXISTS users (
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
+    password VARCHAR(255),
     gender ENUM('MALE', 'FEMALE') NOT NULL,
     dob DATE NOT NULL,
     nin VARCHAR(20) UNIQUE NOT NULL,
-    photo VARCHAR(255),
+    photo LONGTEXT,
     address TEXT,
     state_of_origin VARCHAR(100),
+    ngn_balance DECIMAL(15, 2) DEFAULT 0.00,
+    usd_balance DECIMAL(15, 2) DEFAULT 0.00,
     email_verified BOOLEAN DEFAULT FALSE,
     is_admin BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -22,6 +24,7 @@ CREATE TABLE IF NOT EXISTS wallets (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     naira_balance DECIMAL(18,2) DEFAULT 0,
+    usd_balance DECIMAL(18,2) DEFAULT 0,
     phone_number VARCHAR(20),
     phone_verified BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -135,4 +138,4 @@ CREATE TABLE IF NOT EXISTS verification_codes (
 );
 
 -- Index for quick lookup of active codes
-CREATE INDEX IF NOT EXISTS idx_verification_codes_user_id_code ON verification_codes(user_id, code) WHERE used = FALSE;
+CREATE INDEX idx_verification_codes_user_id_code ON verification_codes(user_id, code, used);

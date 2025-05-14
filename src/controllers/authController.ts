@@ -7,7 +7,6 @@ import { db } from '../service/database';
 import studentBase from '../service/studentBase';
 import bcrypt from 'bcryptjs';
 
-
 interface User {
   id: number;
   first_name: string;
@@ -31,44 +30,40 @@ interface AuthenticatedRequest extends Request {
 
 const authController = {
 
-  signUp: async (req: Request, res: Response): Promise<void> => {
+  signUp: async (req: Request, res: Response): Promise<Response> => {
     try {
       const { nin, email } = req.body;
 
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        res.status(400).json({
+        return res.status(400).json({
           status: false,
           message: 'Validation error',
           errors: errors.array()
         });
-        return;
       }
 
       if (!nin || !email) {
-        res.status(400).json({
+        return res.status(400).json({
           status: false,
           message: 'NIN and email are required'
         });
-        return;
       }
 
       const existingUser = await db.findOne('users', { email });
       if (existingUser) {
-        res.status(400).json({
+        return res.status(400).json({
           status: false,
           message: 'Email already exists'
         });
-        return;
       }
 
       const existingNin = await db.findOne('users', { nin });
       if (existingNin && existingNin.status !== 'PENDING') {
-        res.status(400).json({
+        return res.status(400).json({
           status: false,
           message: 'NIN already exists'
         });
-        return;
       }
 
       if (existingNin && existingNin.status === 'PENDING') {
@@ -88,22 +83,31 @@ const authController = {
 
         const token = Token.sign({ id: existingNin.id, email });
 
-        res.status(200).json({
+        return res.status(200).json({
           status: true,
           message: 'Verification code resent successfully',
           token
         });
-        return;
       }
 
       const userDetail = await studentBase.verifyNin(nin);
+
+      // Helper function to reformat date from DD-MM-YYYY to YYYY-MM-DD
+      const reformatDate = (dateString: string): string => {
+        if (!dateString || typeof dateString !== 'string' || !dateString.includes('-')) return dateString; // Basic check
+        const parts = dateString.split('-');
+        if (parts.length === 3) {
+          return `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+        return dateString; // Return original if format is unexpected
+      };
 
       const user_data = {
         first_name: userDetail.nin_data.firstname,
         email: email,
         last_name: userDetail.nin_data.surname,
         gender: userDetail.nin_data.gender === "m" ? "MALE" : "FEMALE",
-        dob: userDetail.nin_data.birthdate,
+        dob: reformatDate(userDetail.nin_data.birthdate), // Reformatted date
         nin: userDetail.nin_data.nin,
         photo: userDetail.nin_data.photo,
         address: userDetail.nin_data.residence_address,
@@ -140,17 +144,39 @@ const authController = {
 
       const token = Token.sign({ id: inserted, email });
 
-      res.status(201).json({
+      return res.status(201).json({
         status: true,
         message: 'User created successfully',
         token
       });
 
-    } catch (error) {
-      res.status(400).json({
-        status: false,
-        message: error instanceof Error ? error.message : 'An error occurred'
-      });
+    } catch (error: any) {
+      console.error("Sign Up Controller Error:", error);
+      console.error("Detailed Sign Up Controller Error Object:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+
+      let responseMessage = "An unexpected error occurred during sign up. Please check server logs for details.";
+      let statusCode = 500; // Default to server error
+
+      if (error) {
+        if (error.message && typeof error.message === 'string' && error.message.trim() !== '') {
+          responseMessage = error.message;
+          // If it's a known error type that implies client fault, use 400
+          if (error.name === 'ValidationError' || (error.message && (error.message.includes('Duplicate entry') || error.message.includes('already exists')))) {
+            statusCode = 400;
+          }
+        } else if (typeof error === 'string' && error.trim() !== '') {
+          responseMessage = error;
+          statusCode = 400; // Assume string errors are often validation/client related
+        } else if (error.sqlMessage) { // For MySQL errors from a raw query from 'mysql2' package
+          responseMessage = `Database error: ${error.sqlMessage}`;
+          statusCode = 500; // Database errors are typically server-side issues in this context
+        } else if (error.code && error.code.startsWith('ER_')) { // Generic MySQL error codes
+          responseMessage = `Database error (code: ${error.code}).`;
+          statusCode = 500;
+        }
+      }
+
+      return res.status(statusCode).json({ status: false, message: responseMessage });
     }
   },
   resendVerificationCode: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
@@ -237,7 +263,7 @@ const authController = {
   /**
    * Set or update user password
    */
-  async setPassword(req: AuthenticatedRequest, res: Response): Promise<void> {
+  async setPassword(req: AuthenticatedRequest, res: Response): Promise<Response> {
     try {
       const errors = validationResult(req);
 
@@ -257,12 +283,12 @@ const authController = {
         throw new Error('Failed to set password');
       }
 
-      res.status(200).json({
+      return res.status(200).json({
         status: true,
         message: 'Password set successfully'
       });
     } catch (error) {
-      res.status(400).json({
+      return res.status(400).json({
         status: false,
         message: error instanceof Error ? error.message : 'An error occurred'
       });
@@ -272,15 +298,14 @@ const authController = {
   /**
    * Login with email and password
    */
-  async login(req: Request, res: Response): Promise<void> {
+  async login(req: Request, res: Response): Promise<Response> {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        res.status(400).json({
+        return res.status(400).json({
           status: false,
           errors: errors.array()
         });
-        return;
       }
 
       const { email, password } = req.body;
@@ -308,13 +333,13 @@ const authController = {
         last_name: user.last_name
       });
 
-      res.status(200).json({
+      return res.status(200).json({
         status: true,
         access_token: token,
       });
 
     } catch (error) {
-      res.status(400).json({
+      return res.status(400).json({
         status: false,
         message: error instanceof Error ? error.message : 'An error occurred'
       });

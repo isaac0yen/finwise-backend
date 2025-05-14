@@ -53,7 +53,7 @@ const depositController = {
         if (!wallet) {
           return res.status(404).json({ status: false, message: 'Wallet not found' });
         }
-        await db.updateOne('wallets', { naira_balance: wallet.naira_balance + deposit.amount }, { id: deposit.wallet_id });
+        await db.updateOne('wallets', { naira_balance: parseFloat(wallet.naira_balance) + parseFloat(deposit.amount) }, { id: deposit.wallet_id });
         // Mark deposit as SUCCESS
         await db.updateOne('pending_deposits', { status: 'SUCCESS' }, { id: deposit.id });
         // Add transaction record
