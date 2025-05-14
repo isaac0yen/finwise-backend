@@ -63,10 +63,35 @@ const authController = {
       }
 
       const existingNin = await db.findOne('users', { nin });
-      if (existingNin) {
+      if (existingNin && existingNin.status !== 'PENDING') {
         res.status(400).json({
           status: false,
           message: 'NIN already exists'
+        });
+        return;
+      }
+
+      if (existingNin && existingNin.status === 'PENDING') {
+        const code = generateVerificationCode();
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+        await db.deleteMany("verification_codes", { user_id: existingNin.id });
+
+        Email.sendVerificationEmail(email, code);
+
+        await db.insertOne("verification_codes", {
+          user_id: existingNin.id,
+          code,
+          type: 'EMAIL_VERIFICATION',
+          expires_at: expiresAt
+        });
+
+        const token = Token.sign({ id: existingNin.id, email });
+
+        res.status(200).json({
+          status: true,
+          message: 'Verification code resent successfully',
+          token
         });
         return;
       }
@@ -91,6 +116,13 @@ const authController = {
       if (inserted < 1) {
         throw new Error('Failed to create user');
       }
+
+      // Create a wallet for the new user
+      await db.insertOne('wallets', {
+        user_id: inserted,
+        naira_balance: 0,
+        usd_balance: 0
+      });
 
       const code = generateVerificationCode();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
@@ -121,7 +153,6 @@ const authController = {
       });
     }
   },
-
   resendVerificationCode: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const userId = req.context.id;

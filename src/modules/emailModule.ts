@@ -33,6 +33,18 @@ const Email = {
     };
 
     return transporter.sendMail(mailOptions);
+  },
+
+  // Generic email sending function
+  sendMail: (to: string, subject: string, html: string) => {
+    const mailOptions = {
+      from: process.env.EMAIL_FROM,
+      to,
+      subject,
+      html
+    };
+
+    return transporter.sendMail(mailOptions);
   }
 }
 

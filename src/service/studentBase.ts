@@ -4,7 +4,6 @@ dotenv.config();
 
 const studentBase = {
   verifyNin: async (nin: string) => {
-    try {
       if (!process.env.VERIFY_NIN_URL) {
         throw new Error('VERIFY_NIN_URL environment variable is not defined');
       }
@@ -18,11 +17,7 @@ const studentBase = {
           'x-api-key': process.env.VERIFY_NIN_API_KEY
         }
       });
-
       return data.data;
-    } catch (error) {
-      throw error;
-    }
   }
 }
 

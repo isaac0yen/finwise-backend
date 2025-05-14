@@ -1,0 +1,16 @@
+Transaction History
+Allow users to view all wallet transactions (deposits, withdrawals, transfers).
+Wallet Creation on Registration
+Ensure a wallet is created automatically when a new user registers.
+Withdrawals
+Implement endpoints and logic for users to withdraw funds from their wallet.
+Wallet-to-Wallet Transfers
+Optionally allow users to transfer funds to other users’ wallets.
+Balance Integrity Checks
+Add periodic checks or constraints to ensure wallet balances match the sum of transactions.
+Audit Trail/Logging
+Log all changes to wallet balances for security and debugging.
+Concurrency Handling
+Ensure all wallet operations are protected by authentication and authorization middleware.
+Notifications
+Notify users when their wallet is credited or debited.
