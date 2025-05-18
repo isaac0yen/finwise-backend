@@ -10,7 +10,7 @@ import transferRoutes from './routes/transfer.routes';
 import adminRoutes from './routes/admin.routes';
 import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
-import swaggerDocument from '../swagger.json';
+import swaggerDocument from './swagger.json';
 
 dotenv.config();
 
