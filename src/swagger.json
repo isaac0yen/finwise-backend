@@ -657,22 +657,6 @@
         }
       }
     },
-    "/withdrawal/banks": {
-      "get": {
-        "tags": ["Withdrawal"],
-        "summary": "Get list of supported banks",
-        "description": "Retrieves a list of banks supported for withdrawals, typically sourced from Paystack.",
-        "security": [{ "bearerAuth": [] }],
-        "responses": {
-          "200": {
-            "description": "Successfully retrieved list of banks.",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BankListResponse" } } }
-          },
-          "401": { "$ref": "#/components/responses/UnauthorizedError" },
-          "500": { "$ref": "#/components/responses/InternalServerError" } 
-        }
-      }
-    },
     "/withdrawal/resolve-account": {
       "post": {
         "tags": ["Withdrawal"],

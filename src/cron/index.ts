@@ -8,6 +8,8 @@ export function startCrons() {
     console.log('Cron job: Verifying pending naira deposits...');
     await verifyPendingDeposits();
     console.log('Cron job: Finished verifying pending naira deposits.');
+  }, {
+    timezone: "Etc/UTC"
   });
 
   // Daily at 2 AM: check wallet balance integrity
@@ -15,6 +17,8 @@ export function startCrons() {
     console.log('Cron job: Starting wallet balance integrity check...');
     await checkAllWalletBalances();
     console.log('Cron job: Finished wallet balance integrity check.');
+  }, {
+    timezone: "Etc/UTC"
   });
 
   // Add other cron jobs here, e.g.

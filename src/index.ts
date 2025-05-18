@@ -8,6 +8,7 @@ import transactionRoutes from './routes/transaction.routes';
 import withdrawalRoutes from './routes/withdrawal.routes';
 import transferRoutes from './routes/transfer.routes';
 import adminRoutes from './routes/admin.routes';
+import dashboardRoutes from './routes/dashboard.routes';
 import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import swaggerDocument from './swagger.json';
@@ -49,6 +50,9 @@ DBConnect().then(() => {
 
   // Add admin routes
   app.use('/api/admin', adminRoutes);
+
+  // Add dashboard routes
+  app.use('/api/dashboard', dashboardRoutes);
 
   // eslint-disable-next-line no-unused-vars
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {

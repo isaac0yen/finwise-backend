@@ -21,11 +21,11 @@ const dashboardController = {
       // Fetch wallet info
       const wallet = await db.findOne('wallets', { user_id: userId });
       // Fetch token balances
-      const tokenBalances = await db.find('token_balances', { user_id: userId });
+      const tokenBalances = await db.findMany('token_balances', { user_id: userId });
       // Fetch all available tokens
-      const tokens = await db.find('tokens', {});
+      const tokens = await db.findMany('tokens', {});
       // Fetch token market info
-      const tokenMarkets = await db.find('token_markets', {});
+      const tokenMarkets = await db.findMany('token_markets', {});
 
       // Aggregate token balances with token and market info
       const portfolio = tokenBalances?.map((balance: any) => {
