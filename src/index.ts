@@ -10,6 +10,7 @@ import transferRoutes from './routes/transfer.routes';
 import adminRoutes from './routes/admin.routes';
 import dashboardRoutes from './routes/dashboard.routes';
 import tokenRoutes from './routes/tokenRoutes';
+import verificationRoutes from './routes/verification.routes';
 import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import swaggerDocument from './swagger.json';
@@ -28,7 +29,7 @@ DBConnect().then(() => {
 
   app.use(express.urlencoded({ extended: true }));
 
-  app.get('/', (res: Response) => {
+  app.get('/', (req: Request, res: Response) => {
     res.send('<html><body><h1>Welcome to Finwise</h1><p>Our API documentation is available at <a href="/api-docs">/api-docs</a></p></body></html>');
   });
 
@@ -51,6 +52,9 @@ DBConnect().then(() => {
 
   // Add token routes
   app.use('/api/token', tokenRoutes);
+
+  // Add verification routes
+  app.use('/api/verify', verificationRoutes);
 
   // Add admin routes
   app.use('/api/admin', adminRoutes);

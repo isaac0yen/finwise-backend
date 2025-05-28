@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finwise's Verification Page</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3f37c9;
+            --success-color: #4cc9f0;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fb;
+            color: #333;
+        }
+        
+        .navbar {
+            background-color: var(--primary-color);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            color: white !important;
+        }
+        
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease;
+            border: none;
+            margin-bottom: 20px;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-header {
+            background-color: white;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            font-weight: 600;
+            border-radius: 10px 10px 0 0 !important;
+        }
+        
+        .dashboard-card {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .dashboard-card .icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+        
+        .dashboard-card .title {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+        
+        .dashboard-card .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--dark-color);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        
+        .badge-balance {
+            font-size: 1rem;
+            padding: 8px 12px;
+        }
+        
+        .table th {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .pagination {
+            margin-top: 20px;
+        }
+        
+        .page-item.active .page-link {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-card .value {
+                font-size: 1.2rem;
+            }
+            
+            .dashboard-card .icon {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-shield-check me-2"></i>Finwise Verification
+            </a>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Financial Integrity Check</h5>
+                        <button id="refresh-btn" class="btn btn-sm btn-primary">
+                            <i class="bi bi-arrow-repeat me-1"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="row" id="summary-cards">
+                            <!-- Financial summary cards will be loaded here -->
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-center">
+                                    <h5 id="balance-status" class="badge bg-success badge-balance">
+                                        <i class="bi bi-check-circle me-2"></i>System is balanced
+                                    </h5>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Transaction Search</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="search-form">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <input type="text" class="form-control" id="search-input" placeholder="Search by email, name, description...">
+                                </div>
+                                <div class="col-md-2">
+                                    <select class="form-select" id="type-filter">
+                                        <option value="">All Types</option>
+                                        <option value="DEPOSIT">Deposit</option>
+                                        <option value="WITHDRAWAL">Withdrawal</option>
+                                        <option value="TRANSFER_SENT">Transfer Sent</option>
+                                        <option value="TRANSFER_RECEIVED">Transfer Received</option>
+                                        <option value="BUY">Token Buy</option>
+                                        <option value="SELL">Token Sell</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="date" class="form-control" id="start-date">
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="date" class="form-control" id="end-date">
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="bi bi-search me-1"></i> Search
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Transaction Records</h5>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-download me-1"></i> Export
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="exportDropdown">
+                                <li><a class="dropdown-item" href="#" id="export-csv">CSV</a></li>
+                                <li><a class="dropdown-item" href="#" id="export-excel">Excel</a></li>
+                                <li><a class="dropdown-item" href="#" id="export-pdf">PDF</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Date & Time</th>
+                                        <th>User</th>
+                                        <th>Type</th>
+                                        <th>Amount (₦)</th>
+                                        <th>Fee (₦)</th>
+                                        <th>Status</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="transactions-table">
+                                    <!-- Transaction rows will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div id="pagination-container" class="d-flex justify-content-between align-items-center mt-3">
+                            <div>
+                                <span id="pagination-info">Showing 1 to 50 of 500 entries</span>
+                            </div>
+                            <nav aria-label="Page navigation">
+                                <ul class="pagination" id="pagination">
+                                    <!-- Pagination will be loaded here -->
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-dark text-white text-center py-3 mt-5">
+        <div class="container">
+            <p class="mb-0">© 2025 Finwise. All Rights Reserved. | <a href="/api-docs" class="text-white">API Documentation</a></p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const transactionsTable = document.getElementById('transactions-table');
+            const summaryCards = document.getElementById('summary-cards');
+            const balanceStatus = document.getElementById('balance-status');
+            const paginationContainer = document.getElementById('pagination');
+            const paginationInfo = document.getElementById('pagination-info');
+            const searchForm = document.getElementById('search-form');
+            const searchInput = document.getElementById('search-input');
+            const typeFilter = document.getElementById('type-filter');
+            const startDate = document.getElementById('start-date');
+            const endDate = document.getElementById('end-date');
+            const refreshBtn = document.getElementById('refresh-btn');
+            
+            let currentPage = 1;
+            let totalPages = 1;
+            
+            // Format currency
+            function formatCurrency(amount) {
+                return new Intl.NumberFormat('en-NG', {
+                    style: 'currency',
+                    currency: 'NGN',
+                    minimumFractionDigits: 2
+                }).format(amount);
+            }
+            
+            // Format date
+            function formatDate(dateString) {
+                const date = new Date(dateString);
+                return date.toLocaleString('en-NG', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+            
+            // Get badge class based on status
+            function getStatusBadge(status) {
+                switch(status) {
+                    case 'COMPLETED': return 'bg-success';
+                    case 'PENDING': return 'bg-warning';
+                    case 'FAILED': return 'bg-danger';
+                    default: return 'bg-secondary';
+                }
+            }
+            
+            // Get icon class based on transaction type
+            function getTypeIcon(type) {
+                switch(type) {
+                    case 'DEPOSIT': return 'bi-arrow-down-circle-fill text-success';
+                    case 'WITHDRAWAL': return 'bi-arrow-up-circle-fill text-danger';
+                    case 'TRANSFER_SENT': return 'bi-arrow-left-circle-fill text-warning';
+                    case 'TRANSFER_RECEIVED': return 'bi-arrow-right-circle-fill text-info';
+                    case 'BUY': return 'bi-cart-plus-fill text-primary';
+                    case 'SELL': return 'bi-cart-dash-fill text-primary';
+                    default: return 'bi-arrow-repeat text-secondary';
+                }
+            }
+            
+            // Load transactions data
+            function loadTransactions() {
+                loadingOverlay.style.display = 'flex';
+                
+                const queryParams = new URLSearchParams({
+                    page: currentPage.toString(),
+                    limit: '50',
+                    search: searchInput.value,
+                    type: typeFilter.value,
+                    startDate: startDate.value,
+                    endDate: endDate.value
+                });
+                
+                fetch(`/api/verify/data?${queryParams.toString()}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status) {
+                            // Render transactions
+                            renderTransactions(data.transactions);
+                            
+                            // Render financial summary
+                            renderFinancialSummary(data.financialSummary);
+                            
+                            // Render pagination
+                            renderPagination(data.pagination);
+                            
+                            // Update pagination info
+                            const start = (data.pagination.page - 1) * data.pagination.limit + 1;
+                            const end = Math.min(start + data.pagination.limit - 1, data.pagination.total);
+                            paginationInfo.textContent = `Showing ${start} to ${end} of ${data.pagination.total} entries`;
+                            
+                            totalPages = data.pagination.totalPages;
+                        } else {
+                            transactionsTable.innerHTML = `<tr><td colspan="8" class="text-center">Error loading transactions data</td></tr>`;
+                        }
+                        loadingOverlay.style.display = 'none';
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        transactionsTable.innerHTML = `<tr><td colspan="8" class="text-center">Error loading transactions data</td></tr>`;
+                        loadingOverlay.style.display = 'none';
+                    });
+            }
+            
+            // Render transactions table
+            function renderTransactions(transactions) {
+                if (transactions.length === 0) {
+                    transactionsTable.innerHTML = `<tr><td colspan="8" class="text-center">No transactions found</td></tr>`;
+                    return;
+                }
+                
+                let html = '';
+                transactions.forEach(transaction => {
+                    html += `
+                        <tr>
+                            <td>${transaction.id}</td>
+                            <td>${formatDate(transaction.created_at)}</td>
+                            <td>${transaction.email || 'N/A'}</td>
+                            <td>
+                                <i class="bi ${getTypeIcon(transaction.type)} me-1"></i>
+                                ${transaction.type.replace('_', ' ')}
+                            </td>
+                            <td>${formatCurrency(transaction.amount)}</td>
+                            <td>${formatCurrency(transaction.fee || 0)}</td>
+                            <td><span class="badge ${getStatusBadge(transaction.status)}">${transaction.status}</span></td>
+                            <td>${transaction.description || 'N/A'}</td>
+                        </tr>
+                    `;
+                });
+                
+                transactionsTable.innerHTML = html;
+            }
+            
+            // Render financial summary
+            function renderFinancialSummary(summary) {
+                // Create summary cards
+                const cards = [
+                    { title: 'Total Deposits', value: summary.totalDeposits, icon: 'bi-arrow-down-circle-fill text-success' },
+                    { title: 'Total Withdrawals', value: summary.totalWithdrawals, icon: 'bi-arrow-up-circle-fill text-danger' },
+                    { title: 'Total Token Buys', value: summary.totalBuys, icon: 'bi-cart-plus-fill text-primary' },
+                    { title: 'Total Token Sells', value: summary.totalSells, icon: 'bi-cart-dash-fill text-primary' },
+                    { title: 'Total Fees Collected', value: summary.totalFees, icon: 'bi-cash-coin text-warning' },
+                    { title: 'Current Wallet Balance', value: summary.totalWalletBalance, icon: 'bi-wallet2 text-info' }
+                ];
+                
+                let html = '';
+                cards.forEach(card => {
+                    html += `
+                        <div class="col-md-4 col-lg-2 mb-3">
+                            <div class="card dashboard-card h-100">
+                                <div class="icon">
+                                    <i class="bi ${card.icon}"></i>
+                                </div>
+                                <div class="title">${card.title}</div>
+                                <div class="value">${formatCurrency(card.value)}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                summaryCards.innerHTML = html;
+                
+                // Update balance status
+                if (summary.isBalanced) {
+                    balanceStatus.className = 'badge bg-success badge-balance';
+                    balanceStatus.innerHTML = '<i class="bi bi-check-circle me-2"></i>System is balanced';
+                } else {
+                    balanceStatus.className = 'badge bg-danger badge-balance';
+                    balanceStatus.innerHTML = `<i class="bi bi-exclamation-triangle me-2"></i>Discrepancy: ${formatCurrency(summary.discrepancy)}`;
+                }
+            }
+            
+            // Render pagination
+            function renderPagination(pagination) {
+                const totalPages = pagination.totalPages;
+                let html = '';
+                
+                // Previous button
+                html += `
+                    <li class="page-item ${pagination.page === 1 ? 'disabled' : ''}">
+                        <a class="page-link" href="#" data-page="${pagination.page - 1}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                `;
+                
+                // Page numbers
+                const startPage = Math.max(1, pagination.page - 2);
+                const endPage = Math.min(totalPages, pagination.page + 2);
+                
+                for (let i = startPage; i <= endPage; i++) {
+                    html += `
+                        <li class="page-item ${pagination.page === i ? 'active' : ''}">
+                            <a class="page-link" href="#" data-page="${i}">${i}</a>
+                        </li>
+                    `;
+                }
+                
+                // Next button
+                html += `
+                    <li class="page-item ${pagination.page === totalPages ? 'disabled' : ''}">
+                        <a class="page-link" href="#" data-page="${pagination.page + 1}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                `;
+                
+                paginationContainer.innerHTML = html;
+                
+                // Add event listeners to pagination links
+                document.querySelectorAll('.page-link').forEach(link => {
+                    link.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const page = parseInt(this.getAttribute('data-page'));
+                        if (page >= 1 && page <= totalPages) {
+                            currentPage = page;
+                            loadTransactions();
+                        }
+                    });
+                });
+            }
+            
+            // Initialize by loading transactions
+            loadTransactions();
+            
+            // Add event listener to search form
+            searchForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                currentPage = 1;
+                loadTransactions();
+            });
+            
+            // Add event listener to refresh button
+            refreshBtn.addEventListener('click', function() {
+                loadTransactions();
+            });
+            
+            // Add event listeners to export buttons
+            document.getElementById('export-csv').addEventListener('click', function(e) {
+                e.preventDefault();
+                alert('CSV export functionality would be implemented here');
+            });
+            
+            document.getElementById('export-excel').addEventListener('click', function(e) {
+                e.preventDefault();
+                alert('Excel export functionality would be implemented here');
+            });
+            
+            document.getElementById('export-pdf').addEventListener('click', function(e) {
+                e.preventDefault();
+                alert('PDF export functionality would be implemented here');
+            });
+        });
+    </script>
+</body>
+</html>

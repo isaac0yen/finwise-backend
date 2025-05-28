@@ -37,13 +37,23 @@ const checkAndSendExpiryNotification = async (userId: number, days: number): Pro
   
   // Check if notification has already been sent for this threshold
   const notificationKey = `expiry_notification_${days}`;
-  const alreadySent = await db.findOne('notifications', { 
+  
+  // Get notifications for this user and type
+  const notifications = await db.findMany('notifications', { 
     user_id: userId, 
-    type: notificationKey,
-    created_at: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } // Within last 24 hours
+    type: notificationKey
   });
   
-  if (alreadySent) return; // Already sent notification for this threshold
+  // Filter for notifications in the last 24 hours
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const recentNotifications = notifications.filter(notification => {
+    const notificationDate = new Date(notification.created_at);
+    return notificationDate >= oneDayAgo;
+  });
+  
+  const alreadySent = recentNotifications.length > 0;
+  
+  if (alreadySent) return; // Already sent notification for this threshold within the past 24 hours
   
   // Determine time unit for the message
   const timeUnit = days === 1 ? 'day' : 'days';

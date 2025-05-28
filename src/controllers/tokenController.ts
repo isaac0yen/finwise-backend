@@ -23,9 +23,10 @@ const tokenController = {
         columns: "id, name, symbol, institution, total_supply, circulating_supply, initial_price"
       });
       
-      // Get current prices from token_markets
+      // Get current prices from token_markets - get all and filter in JavaScript
       const tokenIds = tokens.map(token => token.id);
-      const marketData = await db.findMany('token_markets', { token_id: { $in: tokenIds } });
+      const allMarketData = await db.findMany('token_markets', {});
+      const marketData = allMarketData.filter(market => tokenIds.includes(market.token_id));
       
       // Map market data to tokens
       const tokensWithPrices = tokens.map(token => {
@@ -63,7 +64,9 @@ const tokenController = {
       // Get all tokens with their market data
       const tokens = await db.findMany('tokens', {});
       const tokenIds = tokens.map(token => token.id);
-      const marketData = await db.findMany('token_markets', { token_id: { $in: tokenIds } });
+      // Get all market data and filter in JavaScript
+      const allMarketData = await db.findMany('token_markets', {});
+      const marketData = allMarketData.filter(market => tokenIds.includes(market.token_id));
       
       // Format market data response
       const prices: Record<string, any> = {};
@@ -552,10 +555,14 @@ const tokenController = {
       
       // Get token data
       const tokenIds = tokenBalances.map(balance => balance.token_id);
-      const tokens = await db.findMany('tokens', { id: { $in: tokenIds } });
       
-      // Get current market prices
-      const marketData = await db.findMany('token_markets', { token_id: { $in: tokenIds } });
+      // Fetch all tokens at once and filter in JavaScript
+      const allTokens = await db.findMany('tokens', {});
+      const tokens = allTokens.filter(token => tokenIds.includes(token.id));
+      
+      // Fetch all market data at once and filter in JavaScript
+      const allMarketData = await db.findMany('token_markets', {});
+      const marketData = allMarketData.filter(market => tokenIds.includes(market.token_id));
       
       // Format portfolio data
       const portfolioTokens: Record<string, any> = {};

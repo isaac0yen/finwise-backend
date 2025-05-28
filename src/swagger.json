@@ -19,7 +19,8 @@
     {"name": "Transactions", "description": "User transaction history"},
     {"name": "Transfer", "description": "Wallet-to-wallet transfers"},
     {"name": "Withdrawal", "description": "Fiat withdrawal operations"},
-    {"name": "UniversityTokens", "description": "Nigerian University Token Trading operations"}
+    {"name": "UniversityTokens", "description": "Nigerian University Token Trading operations"},
+    {"name": "Verification", "description": "Financial transparency and verification"}
   ],
   "components": {
     "schemas": {
@@ -708,6 +709,135 @@
           },
           "401": {
             "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "500": {
+            "description": "Server error",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    },
+    "/verify": {
+      "get": {
+        "tags": ["Verification"],
+        "summary": "Finwise Verification Page",
+        "description": "Public verification page showing all transactions and financial integrity checks",
+        "responses": {
+          "200": {
+            "description": "HTML verification page",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    },
+    "/verify/data": {
+      "get": {
+        "tags": ["Verification"],
+        "summary": "Transaction verification data",
+        "description": "Get transaction data with financial integrity checks for public verification",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number for pagination",
+            "schema": { "type": "integer", "default": 1 }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of transactions per page",
+            "schema": { "type": "integer", "default": 50 }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Search term for filtering transactions",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "description": "Filter by transaction type",
+            "schema": { "type": "string", "enum": ["DEPOSIT", "WITHDRAWAL", "TRANSFER_SENT", "TRANSFER_RECEIVED", "BUY", "SELL"] }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "Start date for filtering (YYYY-MM-DD)",
+            "schema": { "type": "string", "format": "date" }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "End date for filtering (YYYY-MM-DD)",
+            "schema": { "type": "string", "format": "date" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transaction data and financial integrity summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": true },
+                    "transactions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "integer", "example": 1 },
+                          "wallet_id": { "type": "integer", "example": 1 },
+                          "type": { "type": "string", "example": "DEPOSIT" },
+                          "amount": { "type": "number", "format": "float", "example": 1000 },
+                          "status": { "type": "string", "example": "COMPLETED" },
+                          "description": { "type": "string", "example": "Deposit to wallet" },
+                          "email": { "type": "string", "example": "user@example.com" },
+                          "first_name": { "type": "string", "example": "John" },
+                          "last_name": { "type": "string", "example": "Doe" },
+                          "created_at": { "type": "string", "format": "date-time" }
+                        }
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "total": { "type": "integer", "example": 100 },
+                        "page": { "type": "integer", "example": 1 },
+                        "limit": { "type": "integer", "example": 50 },
+                        "totalPages": { "type": "integer", "example": 2 }
+                      }
+                    },
+                    "financialSummary": {
+                      "type": "object",
+                      "properties": {
+                        "totalDeposits": { "type": "number", "format": "float", "example": 50000 },
+                        "totalWithdrawals": { "type": "number", "format": "float", "example": 20000 },
+                        "totalBuys": { "type": "number", "format": "float", "example": 15000 },
+                        "totalSells": { "type": "number", "format": "float", "example": 10000 },
+                        "totalFees": { "type": "number", "format": "float", "example": 500 },
+                        "totalWalletBalance": { "type": "number", "format": "float", "example": 25000 },
+                        "expectedBalance": { "type": "number", "format": "float", "example": 25000 },
+                        "isBalanced": { "type": "boolean", "example": true },
+                        "discrepancy": { "type": "number", "format": "float", "example": 0 },
+                        "lastChecked": { "type": "string", "format": "date-time" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           },
           "500": {
             "description": "Server error",

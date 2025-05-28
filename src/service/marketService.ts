@@ -55,15 +55,17 @@ class MarketService {
       const tokens = await db.findMany('tokens', {});
       const tokenIds = tokens.map(token => token.id);
       
-      // Get market data for all tokens
-      const marketData = await db.findMany('token_markets', { token_id: { $in: tokenIds } });
+      // Get market data for all tokens - get all and filter in JavaScript
+      const allMarketData = await db.findMany('token_markets', {});
+      const marketData = allMarketData.filter(market => tokenIds.includes(market.token_id));
       
-      // Get active market events
+      // Get active market events - get all and filter in JavaScript
       const now = new Date();
-      const activeEvents = await db.findMany('market_events', { 
-        start_time: { $lte: now },
-        end_time: { $gte: now },
-        is_active: true
+      const allEvents = await db.findMany('market_events', { is_active: true });
+      const activeEvents = allEvents.filter(event => {
+        const startTime = new Date(event.start_time);
+        const endTime = new Date(event.end_time);
+        return startTime <= now && endTime >= now;
       });
 
       // Process each token
