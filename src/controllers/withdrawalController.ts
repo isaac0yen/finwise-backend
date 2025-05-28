@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { db } from '../service/database';
+import { resolveAccount, getBanks } from '../modules/paystack';
 import Email from '../modules/emailModule'; // Assuming Email module is structured like this
 
 interface AuthenticatedRequest extends Request {
@@ -7,6 +8,81 @@ interface AuthenticatedRequest extends Request {
 }
 
 const withdrawalController = {
+  /**
+   * Get list of banks supported by Paystack
+   */
+  async getBanks(req: Request, res: Response): Promise<void> {
+    try {
+      const response = await getBanks();
+      
+      if (!response.status) {
+        res.status(400).json({
+          status: false,
+          message: response.message || 'Failed to fetch banks'
+        });
+        return;
+      }
+      
+      // Return successful response with banks list
+      res.json({
+        status: true,
+        message: 'Banks retrieved successfully',
+        data: response.data
+      });
+    } catch (error) {
+      console.error('Error fetching banks:', error);
+      res.status(500).json({
+        status: false,
+        message: 'An error occurred while fetching banks'
+      });
+    }
+  },
+  
+  /**
+   * Resolves and verifies bank account details with Paystack
+   */
+  async resolveAccount(req: Request, res: Response): Promise<void> {
+    try {
+      const { account_number, bank_code } = req.body;
+      
+      if (!account_number || !bank_code) {
+        res.status(400).json({
+          status: false, 
+          message: 'Account number and bank code are required'
+        });
+        return;
+      }
+      
+      // Call Paystack to verify the account
+      const response = await resolveAccount(account_number, bank_code);
+      
+      if (!response.status) {
+        res.status(400).json({
+          status: false,
+          message: response.message || 'Failed to verify account'
+        });
+        return;
+      }
+      
+      // Return successful response with account name
+      res.json({
+        status: true,
+        message: 'Account verified successfully',
+        data: {
+          account_name: response.data.account_name,
+          account_number: response.data.account_number,
+          bank_code: bank_code
+        }
+      });
+    } catch (error) {
+      console.error('Error resolving account:', error);
+      res.status(500).json({
+        status: false,
+        message: 'An error occurred while verifying the account'
+      });
+    }
+  },
+  
   async requestWithdrawal(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const userId = req.context?.id;

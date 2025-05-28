@@ -14,6 +14,23 @@ const handleValidationErrors = (req: Request, res: Response, next: NextFunction)
   return next();
 };
 
+// Route to get list of banks
+router.get('/banks',
+  authenticate,
+  withdrawalController.getBanks
+);
+
+// Route to resolve bank account details
+router.post('/resolve-account',
+  authenticate,
+  [
+    body('account_number').notEmpty().withMessage('Account number is required').isString().isLength({ min: 10, max: 10 }).withMessage('Account number must be 10 digits'),
+    body('bank_code').notEmpty().withMessage('Bank code is required').isString()
+  ],
+  handleValidationErrors,
+  withdrawalController.resolveAccount
+);
+
 // Route to request a withdrawal
 router.post('/request', 
   authenticate, 
