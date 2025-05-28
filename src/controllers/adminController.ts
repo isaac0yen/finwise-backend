@@ -60,9 +60,10 @@ const adminController = {
       if (action === 'APPROVE') {
         // 1. Perform atomic debit on user's wallet
         // Assuming currency is NGN as per current withdrawal request structure
-        const debitResult = await db.updateDirect(
-          'UPDATE wallets SET naira_balance = naira_balance - ? WHERE id = ? AND user_id = ? AND naira_balance >= ?',
-          [pendingWithdrawal.amount, pendingWithdrawal.wallet_id, pendingWithdrawal.user_id, pendingWithdrawal.amount] as any
+        const debitResult = await db.updateOne(
+          'wallets',
+          { naira_balance: pendingWithdrawal.amount },
+          { id: pendingWithdrawal.wallet_id, user_id: pendingWithdrawal.user_id }
         );
 
         if (debitResult < 1) {

@@ -211,12 +211,19 @@ const tokenController = {
         return;
       }
       
-      // Deduct amount from user's wallet
-      const debitResult = await db.updateDirect(
-        'UPDATE wallets SET naira_balance = naira_balance - ?, total_invested = total_invested + ? WHERE id = ? AND naira_balance >= ?',
-        [totalCost, totalCost, wallet.id, totalCost] as any
+      // Deduct amount from user's wallet using updateOne
+      const newBalance = wallet.naira_balance - totalCost;
+      const newInvested = (wallet.total_invested || 0) + totalCost;
+      if (newBalance < 0) {
+        await db.rollback();
+        res.status(400).json({ status: false, message: 'Insufficient balance.' });
+        return;
+      }
+      const debitResult = await db.updateOne(
+        'wallets',
+        { naira_balance: newBalance, total_invested: newInvested },
+        { id: wallet.id }
       );
-      
       if (debitResult < 1) {
         await db.rollback();
         res.status(400).json({ status: false, message: 'Failed to update wallet balance.' });

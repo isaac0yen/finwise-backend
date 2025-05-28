@@ -27,6 +27,7 @@ export const authenticate = (req: AuthenticatedRequest, res: Response, next: Nex
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'YOUR_DEFAULT_JWT_SECRET') as UserPayload;
       req.context = decoded; // Attach decoded payload to request context
+      (req as any).user = decoded; // Also attach to req.user for backward compatibility
       next();
     } catch (error) {
       // console.error('Authentication error:', error);

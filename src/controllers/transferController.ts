@@ -78,9 +78,10 @@ const transferController = {
       }
 
       // 3. Perform atomic debit on sender's wallet
-      const debitSenderResult = await db.updateDirect(
-        'UPDATE wallets SET naira_balance = naira_balance - ? WHERE user_id = ? AND id = ? AND naira_balance >= ?',
-        [parsedAmount, senderId, senderWallet.id, parsedAmount] as any
+      const debitSenderResult = await db.updateOne(
+        'wallets',
+        { naira_balance: senderWallet.naira_balance - parsedAmount },
+        { user_id: senderId, id: senderWallet.id }
       );
 
       if (debitSenderResult < 1) {
@@ -90,9 +91,10 @@ const transferController = {
       }
 
       // 4. Credit recipient's wallet
-      const creditRecipientResult = await db.updateDirect(
-        'UPDATE wallets SET naira_balance = naira_balance + ? WHERE user_id = ? AND id = ?',
-        [parsedAmount, recipientUser.id, recipientWallet.id] as any
+      const creditRecipientResult = await db.updateOne(
+        'wallets',
+        { naira_balance: recipientWallet.naira_balance + parsedAmount },
+        { user_id: recipientUser.id, id: recipientWallet.id }
       );
 
       // Check affectedRows from the results

@@ -17,7 +17,7 @@ const authenticate = async (
   if (!authHeader?.startsWith('Bearer ')) {
     return res.status(401).json({
       status: false,
-      message: 'Authentication required',
+      message: 'Authentication required 1',
       headers: { 'WWW-Authenticate': 'Bearer' }
     });
   }
@@ -26,7 +26,11 @@ const authenticate = async (
     
   try {
     const user = Token.verify(token);
+
+    console.log(user);
+
     (req as any).context = user;
+    (req as any).user = user; // Also attach to req.user for backward compatibility
     next();
   } catch (error: unknown) {
     return res.status(401).json({

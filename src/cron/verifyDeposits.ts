@@ -18,9 +18,10 @@ export async function verifyPendingDeposits() {
           // Optionally, proceed without email if user not found, or handle error differently
         }
 
-        await db.updateDirect(
-          'UPDATE wallets SET naira_balance = naira_balance + ? WHERE id = ?',
-          [deposit.amount, deposit.wallet_id] as any // Cast params for db.updateDirect
+        await db.updateOne(
+          'wallets',
+          { naira_balance: deposit.amount },
+          { id: deposit.wallet_id }
         );
         await db.updateOne('pending_deposits', { status: 'SUCCESS' }, { id: deposit.id });
         await transactionController.addTransaction({

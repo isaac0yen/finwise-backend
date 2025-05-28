@@ -22,42 +22,42 @@ const daysUntilExpiry = (createdAt: Date): number => {
 const checkAndSendExpiryNotification = async (userId: number, days: number): Promise<void> => {
   // Thresholds for notifications
   const notifyThresholds = [30, 7, 1]; // 30 days, 7 days, 1 day
-  
+
   if (!notifyThresholds.includes(days)) {
     return; // Not a notification day
   }
-  
+
   // Get user details
   const user = await db.findOne('users', { id: userId });
   if (!user || !user.email) return;
-  
+
   // Get wallet balance to include in expiry notice
   const wallet = await db.findOne('wallets', { user_id: userId });
   const balance = wallet ? wallet.naira_balance : 0;
-  
+
   // Check if notification has already been sent for this threshold
   const notificationKey = `expiry_notification_${days}`;
-  
+
   // Get notifications for this user and type
-  const notifications = await db.findMany('notifications', { 
-    user_id: userId, 
+  const notifications = await db.findMany('notifications', {
+    user_id: userId,
     type: notificationKey
   });
-  
+
   // Filter for notifications in the last 24 hours
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
   const recentNotifications = notifications.filter(notification => {
     const notificationDate = new Date(notification.created_at);
     return notificationDate >= oneDayAgo;
   });
-  
+
   const alreadySent = recentNotifications.length > 0;
-  
+
   if (alreadySent) return; // Already sent notification for this threshold within the past 24 hours
-  
+
   // Determine time unit for the message
   const timeUnit = days === 1 ? 'day' : 'days';
-  
+
   const emailSubject = `Your Finwise Account Will Expire in ${days} ${timeUnit}`;
   const emailHtml = `
     <p>Dear ${user.first_name},</p>
@@ -66,10 +66,10 @@ const checkAndSendExpiryNotification = async (userId: number, days: number): Pro
     ${balance > 100 ? `<p>Your current balance is ${balance.toFixed(2)} NGN. After account expiration, to recover funds exceeding 100 NGN, please contact hi@mygenius.ng with your account details.</p>` : ''}
     <p>Thank you for using Finwise.</p>
   `;
-  
+
   try {
     await Email.sendMail(user.email, emailSubject, emailHtml);
-    
+
     // Record that notification was sent
     await db.insertOne('notifications', {
       user_id: userId,
@@ -90,34 +90,52 @@ const checkAndSendExpiryNotification = async (userId: number, days: number): Pro
 const checkUserStatus = async (req: Request & { user?: any }, res: Response, next: NextFunction): Promise<void> => {
   try {
     // User is attached to req by the auth middleware
-    const user = req.user;
-    
-    if (!user) {
+    const tokenUser = req.user;
+    console.log('Token user:', tokenUser);
+
+    if (!tokenUser || !tokenUser.id) {
+      console.log('No valid user in token');
+
       res.status(401).json({
         status: false,
-        message: 'Authentication required'
+        message: 'Authentication required: Missing or invalid user ID'
       });
       return;
     }
     
+    // Fetch complete user data from database including status
+    const user = await db.findOne('users', { id: tokenUser.id });
+    console.log('Database user:', user);
+    
+    if (!user) {
+      res.status(401).json({
+        status: false,
+        message: 'User not found in database'
+      });
+      return;
+    }
+    
+    // Attach full user data to the request for downstream handlers
+    req.user = user;
+
     // Check account creation date and handle expiry
     if (user.created_at) {
       const createdAt = new Date(user.created_at);
       const days = daysUntilExpiry(createdAt);
-      
+
       // Send notification if approaching expiry
       await checkAndSendExpiryNotification(user.id, days);
-      
+
       // If account has expired, update status and notify
       if (days <= 0 && user.status !== 'EXPIRED') {
         // Update user status to EXPIRED
         await db.updateOne('users', { status: 'EXPIRED' }, { id: user.id });
         user.status = 'EXPIRED';
-        
+
         // Get wallet balance
         const wallet = await db.findOne('wallets', { user_id: user.id });
         const balance = wallet ? wallet.naira_balance : 0;
-        
+
         // Send final expiry notification if balance > 100
         if (balance > 100 && user.email) {
           const emailSubject = 'Your Finwise Account Has Expired';
@@ -127,7 +145,7 @@ const checkUserStatus = async (req: Request & { user?: any }, res: Response, nex
             <p>Your current balance is ${balance.toFixed(2)} NGN. To recover your funds, please contact hi@mygenius.ng with your account details.</p>
             <p>Thank you for using Finwise.</p>
           `;
-          
+
           try {
             await Email.sendMail(user.email, emailSubject, emailHtml);
           } catch (emailError) {
@@ -135,12 +153,12 @@ const checkUserStatus = async (req: Request & { user?: any }, res: Response, nex
           }
         }
       }
-      
+
       // Block transactions for accounts approaching expiry (30 days or less)
-      const isTransactionRequest = req.path.includes('/transfer') || 
-                                 req.path.includes('/deposit') || 
-                                 req.path.includes('/withdraw');
-      
+      const isTransactionRequest = req.path.includes('/transfer') ||
+        req.path.includes('/deposit') ||
+        req.path.includes('/withdraw');
+
       if (days <= 30 && isTransactionRequest) {
         res.status(403).json({
           status: false,
@@ -149,10 +167,10 @@ const checkUserStatus = async (req: Request & { user?: any }, res: Response, nex
         return;
       }
     }
-    
+
     if (user.status !== 'ACTIVE') {
       let message = 'Access denied';
-      
+
       switch (user.status) {
         case 'PENDING':
           message = 'Email verification required. Please verify your email to continue.';
@@ -167,14 +185,14 @@ const checkUserStatus = async (req: Request & { user?: any }, res: Response, nex
           message = 'Your account has expired after 5 years of usage. If your balance exceeds 100 NGN, please contact hi@mygenius.ng to recover your funds.';
           break;
       }
-      
+
       res.status(403).json({
         status: false,
         message
       });
       return;
     }
-    
+
     next();
   } catch (error) {
     console.error('Check user status error:', error);
