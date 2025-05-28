@@ -40,11 +40,11 @@ const tokenController = {
           totalSupply: token.total_supply,
           circulatingSupply: token.circulating_supply,
           initialPrice: token.initial_price,
-          currentPrice: market ? Number(market.price.toFixed(8)) : Number(token.initial_price.toFixed(8)),
-          priceChange24h: market ? Number(market.price_change_24h.toFixed(5)) : 0,
-          volume24h: market ? Number(market.volume.toFixed(18)) : Number('0.000000000000000000'),
-          liquidityPool: market ? Number(market.liquidity_pool.toFixed(18)) : Number((token.total_supply * token.initial_price * 0.1).toFixed(18)),
-          volatility: market ? Number(market.volatility.toFixed(5)) : Number('0.05000'),
+          currentPrice: market ? Number(Number(market.price).toFixed(8)) : Number(Number(token.initial_price).toFixed(8)),
+          priceChange24h: market ? Number(Number(market.price_change_24h).toFixed(5)) : 0,
+          volume24h: market ? Number(Number(market.volume).toFixed(18)) : Number('0.000000000000000000'),
+          liquidityPool: market ? Number(Number(market.liquidity_pool).toFixed(18)) : Number((Number(token.total_supply) * Number(token.initial_price) * 0.1).toFixed(18)),
+          volatility: market ? Number(Number(market.volatility).toFixed(5)) : Number('0.05000'),
           sentiment: market ? market.sentiment : 'NEUTRAL'
         };
       });
@@ -78,11 +78,11 @@ const tokenController = {
         const market = marketData.find(m => m.token_id === token.id);
         if (market) {
           prices[token.symbol] = {
-            current: Number(market.price.toFixed(8)),
-            change24h: Number(market.price_change_24h.toFixed(5)),
-            volume24h: Number(market.volume.toFixed(18)),
-            liquidityPool: Number(market.liquidity_pool.toFixed(18)),
-            volatility: Number(market.volatility.toFixed(5)),
+            current: Number(Number(market.price).toFixed(8)),
+            change24h: Number(Number(market.price_change_24h).toFixed(5)),
+            volume24h: Number(Number(market.volume).toFixed(18)),
+            liquidityPool: Number(Number(market.liquidity_pool).toFixed(18)),
+            volatility: Number(Number(market.volatility).toFixed(5)),
             sentiment: market.sentiment
           };
         }
@@ -97,11 +97,11 @@ const tokenController = {
         return {
           symbol: token?.symbol,
           name: token?.name,
-          change: Number(market.price_change_24h.toFixed(5)),
-          price: Number(market.price.toFixed(8)),
-          volume: Number(market.volume.toFixed(18)),
-          liquidityPool: Number(market.liquidity_pool.toFixed(18)),
-          volatility: Number(market.volatility.toFixed(5)),
+          change: Number(Number(market.price_change_24h).toFixed(5)),
+          price: Number(Number(market.price).toFixed(8)),
+          volume: Number(Number(market.volume).toFixed(18)),
+          liquidityPool: Number(Number(market.liquidity_pool).toFixed(18)),
+          volatility: Number(Number(market.volatility).toFixed(5)),
           sentiment: market.sentiment
         };
       });
@@ -111,11 +111,11 @@ const tokenController = {
         return {
           symbol: token?.symbol,
           name: token?.name,
-          change: Number(market.price_change_24h.toFixed(5)),
-          price: Number(market.price.toFixed(8)),
-          volume: Number(market.volume.toFixed(18)),
-          liquidityPool: Number(market.liquidity_pool.toFixed(18)),
-          volatility: Number(market.volatility.toFixed(5)),
+          change: Number(Number(market.price_change_24h).toFixed(5)),
+          price: Number(Number(market.price).toFixed(8)),
+          volume: Number(Number(market.volume).toFixed(18)),
+          liquidityPool: Number(Number(market.liquidity_pool).toFixed(18)),
+          volatility: Number(Number(market.volatility).toFixed(5)),
           sentiment: market.sentiment
         };
       });
@@ -125,11 +125,11 @@ const tokenController = {
         return {
           symbol: token?.symbol,
           name: token?.name,
-          volume: Number(market.volume.toFixed(18)),
-          price: Number(market.price.toFixed(8)),
-          change: Number(market.price_change_24h.toFixed(5)),
-          liquidityPool: Number(market.liquidity_pool.toFixed(18)),
-          volatility: Number(market.volatility.toFixed(5)),
+          volume: Number(Number(market.volume).toFixed(18)),
+          price: Number(Number(market.price).toFixed(8)),
+          change: Number(Number(market.price_change_24h).toFixed(5)),
+          liquidityPool: Number(Number(market.liquidity_pool).toFixed(18)),
+          volatility: Number(Number(market.volatility).toFixed(5)),
           sentiment: market.sentiment
         };
       });

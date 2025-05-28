@@ -74,18 +74,18 @@ class MarketService {
         if (!market) continue;
 
         // Calculate new price based on multiple factors
-        const currentPrice = market.price;
+        const currentPrice = Number(market.price);
         let newPrice = currentPrice;
 
         // 1. Apply time-based trend (random walk)
-        const timeBasedTrend = this.getRandomVolatility(market.volatility);
+        const timeBasedTrend = this.getRandomVolatility(Number(market.volatility));
         newPrice *= (1 + timeBasedTrend);
 
         // 2. Apply market hours volatility
         const hour = now.getHours();
         if (hour >= PRICE_MOVEMENT_RULES.marketHours.start && hour < PRICE_MOVEMENT_RULES.marketHours.end) {
           // During market hours, increase volatility
-          newPrice *= (1 + this.getRandomVolatility(market.volatility * 1.5));
+          newPrice *= (1 + this.getRandomVolatility(Number(market.volatility) * 1.5));
         }
 
         // 3. Apply active market events
@@ -246,9 +246,9 @@ class MarketService {
         throw new Error(`Market data for token ID ${tokenId} not found`);
       }
 
-      const currentPrice = market.price;
-      const totalSupply = token.total_supply;
-      const circulatingSupply = token.circulating_supply;
+      const currentPrice = Number(market.price);
+      const totalSupply = Number(token.total_supply);
+      const circulatingSupply = Number(token.circulating_supply);
 
       // Calculate price impact based on trade size relative to token liquidity
       // Smaller tokens or larger trades have bigger impact
@@ -296,13 +296,13 @@ class MarketService {
       // Calculate liquidity pool and volatility
       const liquidityPool = token.circulating_supply * newPrice;
       const volatility = this.calculateVolatility(currentPrice, newPrice);
-      const updatedPriceChange = Number((market.price_change_24h + priceChange).toFixed(5));
+      const updatedPriceChange = Number((Number(market.price_change_24h) + priceChange).toFixed(5));
       
       // Update the market data with all metrics
       await db.updateOne('token_markets', {
         price: Number(newPrice.toFixed(8)),
         price_change_24h: updatedPriceChange,
-        volume: Number((market.volume + tradeValue).toFixed(18)),
+        volume: Number((Number(market.volume) + tradeValue).toFixed(18)),
         liquidity_pool: Number(liquidityPool.toFixed(18)),
         volatility: volatility,
         sentiment: this.getMarketSentiment(updatedPriceChange),

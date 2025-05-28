@@ -61,6 +61,7 @@ const dashboardController = {
           last_name: user.last_name,
           email: user.email,
           naira_balance: wallet?.naira_balance || 0,
+          user_tag: user?.user_tag
         },
         portfolio,
         marketTrends
