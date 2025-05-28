@@ -75,6 +75,8 @@ export const PRICE_MOVEMENT_RULES = {
   maxPrice: 1000,              // Maximum ₦1000 per token
   volatilityWindow: 300000,    // 5-minute price update intervals
   trendDuration: 3600000,      // 1-hour trend periods
+  tradeImpactMultiplier: 0.5,  // Base multiplier for trade impact on price
+  maxTradeImpactPercentage: 5, // Maximum 5% price change in a single trade
   marketHours: {
     start: 9,                  // 9 AM
     end: 17                    // 5 PM (more volatility during these hours)

@@ -188,6 +188,98 @@ class MarketService {
     const shuffled = [...allTokens].sort(() => 0.5 - Math.random());
     return shuffled.slice(0, Math.min(count, allTokens.length));
   }
+
+  /**
+   * Updates token price immediately after a trade
+   * 
+   * @param tokenId ID of the token being traded
+   * @param isBuy True if this is a buy order, false for sell order
+   * @param quantity Amount of tokens being traded
+   * @param tradeValue Total value of the trade in naira
+   */
+  public async updatePriceOnTrade(
+    tokenId: number, 
+    isBuy: boolean, 
+    quantity: number, 
+    tradeValue: number
+  ): Promise<number> {
+    try {
+      // Get token data
+      const token = await db.findOne('tokens', { id: tokenId });
+      if (!token) {
+        throw new Error(`Token with ID ${tokenId} not found`);
+      }
+
+      // Get current market data
+      const market = await db.findOne('token_markets', { token_id: tokenId });
+      if (!market) {
+        throw new Error(`Market data for token ID ${tokenId} not found`);
+      }
+
+      const currentPrice = market.price;
+      const totalSupply = token.total_supply;
+      const circulatingSupply = token.circulating_supply;
+
+      // Calculate price impact based on trade size relative to token liquidity
+      // Smaller tokens or larger trades have bigger impact
+      const liquidityFactor = circulatingSupply / totalSupply;
+      const tradeSizeFactor = quantity / circulatingSupply;
+      
+      // Base impact percentage - larger for less liquid tokens
+      let baseImpactPercentage = (1 - liquidityFactor) * PRICE_MOVEMENT_RULES.tradeImpactMultiplier;
+      
+      // Scale based on size of trade
+      const scaledImpact = baseImpactPercentage * tradeSizeFactor * 100;
+      
+      // Cap the maximum impact to prevent extreme price movements
+      const cappedScaledImpact = Math.min(
+        scaledImpact, 
+        PRICE_MOVEMENT_RULES.maxTradeImpactPercentage
+      );
+
+      // Apply direction - buys increase price, sells decrease price
+      const impactMultiplier = isBuy ? 1 + (cappedScaledImpact / 100) : 1 - (cappedScaledImpact / 100);
+      let newPrice = currentPrice * impactMultiplier;
+
+      // Ensure price is within bounds
+      newPrice = Math.max(
+        PRICE_MOVEMENT_RULES.minPrice, 
+        Math.min(PRICE_MOVEMENT_RULES.maxPrice, newPrice)
+      );
+
+      // Calculate price change percentage
+      const priceChange = ((newPrice - currentPrice) / currentPrice) * 100;
+      
+      // Update the token's circulating supply
+      if (isBuy) {
+        // When buying, tokens come from total supply into circulation
+        await db.updateOne('tokens', {
+          circulating_supply: circulatingSupply + quantity
+        }, {
+          id: tokenId
+        });
+      } else {
+        // When selling, tokens remain in circulation, just changing hands
+        // No need to update circulating_supply here as it stays the same
+      }
+
+      // Update the market data
+      await db.updateOne('token_markets', {
+        price: newPrice,
+        price_change_24h: market.price_change_24h + priceChange, // Accumulate price change
+        volume: market.volume + tradeValue,
+        updated_at: new Date()
+      }, {
+        id: market.id
+      });
+
+      console.log(`Token ${token.symbol} price updated after trade: ${currentPrice} → ${newPrice} (${priceChange.toFixed(2)}%)`);
+      return newPrice;
+    } catch (error) {
+      console.error('Error updating price on trade:', error);
+      throw error;
+    }
+  }
 }
 
 // Export singleton instance

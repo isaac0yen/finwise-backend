@@ -3,6 +3,7 @@ import { db } from '../service/database';
 import { TransactionType } from '../models/transaction';
 import { PRICE_MOVEMENT_RULES, UNIVERSITY_TOKENS, TokenEventType } from '../models/universityToken';
 import Email from '../modules/emailModule';
+import { marketService } from '../service/marketService';
 
 interface User {
   id: number;
@@ -291,12 +292,13 @@ const tokenController = {
         return;
       }
       
-      // Update token market data
-      await db.updateOne('token_markets', {
-        volume: tokenMarket.volume + totalCost
-      }, {
-        token_id: tokenId
-      });
+      // Update token price based on this purchase
+      const newPrice = await marketService.updatePriceOnTrade(
+        tokenId,
+        true, // this is a buy order
+        parsedQuantity,
+        totalCost
+      );
       
       await db.commit();
       
@@ -454,12 +456,13 @@ const tokenController = {
         description: `Sold ${parsedQuantity} ${token.symbol} tokens at ₦${parsedPrice} each. ${fee > 0 ? `Fee: ₦${fee.toFixed(2)}` : ''}`
       });
       
-      // Update token market data
-      await db.updateOne('token_markets', {
-        volume: tokenMarket.volume + totalSaleValue
-      }, {
-        token_id: tokenId
-      });
+      // Update token price based on this sale
+      const newPrice = await marketService.updatePriceOnTrade(
+        tokenId,
+        false, // this is a sell order
+        parsedQuantity,
+        totalSaleValue
+      );
       
       await db.commit();
       
