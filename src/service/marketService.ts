@@ -116,10 +116,18 @@ class MarketService {
         // Calculate price change percentage
         const priceChange = ((newPrice - currentPrice) / currentPrice) * 100;
 
-        // Update the market data
+        // Calculate liquidity pool and volatility
+        const liquidityPool = token.circulating_supply * newPrice;
+        const volatility = this.calculateVolatility(currentPrice, newPrice);
+        
+        // Update the market data with all metrics
         await db.updateOne('token_markets', {
-          price: newPrice,
-          price_change_24h: priceChange,
+          price: Number(newPrice.toFixed(8)),
+          price_change_24h: Number(priceChange.toFixed(5)),
+          volume: market.volume, // Keep existing volume, it's updated on trades
+          liquidity_pool: Number(liquidityPool.toFixed(18)),
+          volatility: volatility,
+          sentiment: this.getMarketSentiment(priceChange),
           updated_at: new Date()
         }, {
           id: market.id
@@ -179,6 +187,28 @@ class MarketService {
   private getRandomVolatility(baseVolatility: number = 0.05): number {
     // Returns a value between -baseVolatility and +baseVolatility
     return (Math.random() * 2 - 1) * baseVolatility;
+  }
+  
+  /**
+   * Calculates volatility based on price changes
+   * @param oldPrice Previous price
+   * @param newPrice New price
+   * @returns Volatility as a percentage (0-10)
+   */
+  private calculateVolatility(oldPrice: number, newPrice: number): number {
+    const priceChange = Math.abs((newPrice - oldPrice) / oldPrice);
+    return Math.min(Number((priceChange * 100).toFixed(5)), 10); // Cap at 10% volatility
+  }
+  
+  /**
+   * Determines market sentiment based on price change
+   * @param priceChange24h 24-hour price change percentage
+   * @returns Market sentiment string (BULLISH, BEARISH, NEUTRAL)
+   */
+  private getMarketSentiment(priceChange24h: number): string {
+    if (priceChange24h > 0.5) return 'BULLISH';
+    if (priceChange24h < -0.5) return 'BEARISH';
+    return 'NEUTRAL';
   }
 
   /**
@@ -263,11 +293,19 @@ class MarketService {
         // No need to update circulating_supply here as it stays the same
       }
 
-      // Update the market data
+      // Calculate liquidity pool and volatility
+      const liquidityPool = token.circulating_supply * newPrice;
+      const volatility = this.calculateVolatility(currentPrice, newPrice);
+      const updatedPriceChange = Number((market.price_change_24h + priceChange).toFixed(5));
+      
+      // Update the market data with all metrics
       await db.updateOne('token_markets', {
-        price: newPrice,
-        price_change_24h: market.price_change_24h + priceChange, // Accumulate price change
-        volume: market.volume + tradeValue,
+        price: Number(newPrice.toFixed(8)),
+        price_change_24h: updatedPriceChange,
+        volume: Number((market.volume + tradeValue).toFixed(18)),
+        liquidity_pool: Number(liquidityPool.toFixed(18)),
+        volatility: volatility,
+        sentiment: this.getMarketSentiment(updatedPriceChange),
         updated_at: new Date()
       }, {
         id: market.id

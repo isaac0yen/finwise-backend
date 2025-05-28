@@ -27,10 +27,10 @@ export interface TokenMarket {
   tokenId: number;
   price: number;
   volume: number;
-  liquidityPool?: number;
-  volatility?: number;
-  sentiment?: string;
-  priceChange24h?: number;
+  liquidity_pool: number;
+  volatility: number;
+  sentiment: string;
+  priceChange24h: number;
   updatedAt?: Date;
 }
 
