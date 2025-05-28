@@ -9,6 +9,7 @@ import withdrawalRoutes from './routes/withdrawal.routes';
 import transferRoutes from './routes/transfer.routes';
 import adminRoutes from './routes/admin.routes';
 import dashboardRoutes from './routes/dashboard.routes';
+import tokenRoutes from './routes/tokenRoutes';
 import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import swaggerDocument from './swagger.json';
@@ -47,6 +48,9 @@ DBConnect().then(() => {
 
   // Add transfer routes
   app.use('/api/transfer', transferRoutes);
+
+  // Add token routes
+  app.use('/api/token', tokenRoutes);
 
   // Add admin routes
   app.use('/api/admin', adminRoutes);

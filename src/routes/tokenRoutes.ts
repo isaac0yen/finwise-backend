@@ -6,7 +6,7 @@ import { checkUserStatus } from '../middleware/checkuserStatus';
 const router = express.Router();
 
 // Public routes
-router.get('/tokens', tokenController.getAllTokens);
+router.get('/all', tokenController.getAllTokens);
 router.get('/market/prices', tokenController.getMarketData);
 
 // Authenticated routes
