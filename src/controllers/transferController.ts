@@ -27,10 +27,10 @@ const transferController = {
       return;
     }
 
-    const { recipientEmail, amount, currency = 'NGN' } = req.body;
+    const { recipientTag, amount, currency = 'NGN' } = req.body;
 
-    if (!recipientEmail || !amount) {
-      res.status(400).json({ status: false, message: 'Recipient email and amount are required.' });
+    if (!recipientTag || !amount) {
+      res.status(400).json({ status: false, message: 'Recipient tag and amount are required.' });
       return;
     }
 
@@ -57,11 +57,10 @@ const transferController = {
         return;
       }
 
-      // 2. Fetch recipient user and their wallet
-      const recipientUser = await db.findOne('users', { email: recipientEmail });
+      const recipientUser = await db.findOne('users', { user_tag: recipientTag });
       if (!recipientUser) {
         await db.rollback();
-        res.status(404).json({ status: false, message: 'Recipient user not found.' });
+        res.status(404).json({ status: false, message: 'Recipient user not found. Please check the tag and try again.' });
         return;
       }
 
@@ -110,7 +109,7 @@ const transferController = {
         type: TransactionType.TRANSFER_SENT, // Use enum member
         amount: -parsedAmount, // Negative for sender
         status: 'COMPLETED',
-        description: `Transfer to ${recipientEmail}`,
+        description: `Transfer to ${recipientUser.first_name} ${recipientUser.last_name} (${recipientTag})`,
         related_user_id: recipientUser.id, // Add back related_user_id
       });
 
@@ -125,12 +124,15 @@ const transferController = {
 
       await db.commit();
 
+      // Get sender user details for notification
+      const senderUser = await db.findOne('users', { id: senderId });
+
       // Send email notification to recipient
       if (recipientUser && recipientUser.email) {
         const emailSubject = 'Funds Received';
         const emailHtml = `
           <p>Dear ${recipientUser.first_name || 'User'},</p>
-          <p>You have received a transfer of ${parsedAmount.toFixed(2)} NGN from ${senderEmail || 'another user'}.</p>
+          <p>You have received a transfer of ${parsedAmount.toFixed(2)} NGN from ${senderUser?.first_name || ''} ${senderUser?.last_name || ''} (${senderUser?.user_tag || 'User'}).</p>
           <p>Your new wallet balance reflects this transaction.</p>
           <p>Thank you for using Finwise.</p>
         `;

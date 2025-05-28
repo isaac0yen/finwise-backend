@@ -8,7 +8,7 @@ const USER_SIGNUP_DATA = {
     email: "isaacoyeniyi06@gmail.com" // Use a unique email for each test run or clean DB
 };
 const USER_PASSWORD = "TestPassword123!";
-const DEPOSIT_AMOUNT = 1000; // Deposit 50,000 NGN
+const DEPOSIT_AMOUNT = 7500; // Deposit 50,000 NGN
 const WITHDRAWAL_DATA = {
     amount: "100.00", // Must be a string for validator, will be parsed to float
     currency: "NGN",
@@ -69,8 +69,8 @@ async function setPassword() {
     }
     logStep('2. Setting Password');
     try {
-        const response = await axios.post(`${API_BASE_URL}/auth/set-password`, 
-            { password: USER_PASSWORD }, 
+        const response = await axios.post(`${API_BASE_URL}/auth/set-password`,
+            { password: USER_PASSWORD },
             { headers: { Authorization: `Bearer ${authToken}` } }
         );
         logStep('2. Set Password Response', response.data);
@@ -94,6 +94,7 @@ async function loginUser() {
             password: USER_PASSWORD
         });
         logStep('3. Login Response', response.data);
+        fs.writeFileSync("a.json", JSON.stringify(response.data), null, 2)
         if (response.data.status && response.data.access_token) {
             authToken = response.data.access_token;
             results.login_token = authToken;
@@ -170,11 +171,11 @@ async function requestWithdrawal() {
         results['6. Request Withdrawal Error'] = 'No auth token';
         throw new Error('No auth token for requestWithdrawal');
     }
-    
+
     logStep('6. Requesting Withdrawal');
     try {
-        const response = await axios.post(`${API_BASE_URL}/withdrawal/request`, 
-            WITHDRAWAL_DATA, 
+        const response = await axios.post(`${API_BASE_URL}/withdrawal/request`,
+            WITHDRAWAL_DATA,
             { headers: { Authorization: `Bearer ${authToken}` } }
         );
         logStep('6. Request Withdrawal Response', response.data);
@@ -194,9 +195,10 @@ async function requestWithdrawal() {
 async function runTests() {
     console.log('Starting API Test Sequence...');
     try {
+        loginUser()
         const depositReference = await initializeDeposit(authToken, DEPOSIT_AMOUNT);
-         //await verifyDeposit(authToken, "n5egkbt2au");
-         //await requestWithdrawal();
+        //await verifyDeposit(authToken, "n5egkbt2au");
+        //await requestWithdrawal();
         console.log('\n--- All tests completed successfully! ---');
     } catch (error) {
         console.error('\n--- Test sequence failed ---');

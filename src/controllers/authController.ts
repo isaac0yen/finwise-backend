@@ -21,12 +21,49 @@ interface User {
   state_of_origin: string;
   email_verified: boolean;
   created_at: Date;
-  status: 'ACTIVE' | 'INACTIVE' | 'DELETED' | 'PENDING';
+  status: 'ACTIVE' | 'INACTIVE' | 'DELETED' | 'PENDING' | 'EXPIRED';
+  user_tag: string;
 }
 
 interface AuthenticatedRequest extends Request {
   context: User;
 }
+
+/**
+ * Generates a random 4-character alphanumeric tag
+ * @returns A random 4-character alphanumeric string
+ */
+const generateUserTag = (): string => {
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let result = '';
+  for (let i = 0; i < 4; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return result;
+};
+
+/**
+ * Checks if the email is from an educational institution
+ * @param email The email to check
+ * @returns boolean indicating if the email is educational
+ */
+const isEducationalEmail = (email: string): boolean => {
+  // Common educational domains
+  const eduDomains = [
+    '.edu',
+    '.ac.',
+    '.edu.',
+    '.sch.',
+    'university',
+    'college',
+    'school',
+    'academy',
+    'institute'
+  ];
+  
+  const lowerEmail = email.toLowerCase();
+  return eduDomains.some(domain => lowerEmail.includes(domain));
+};
 
 const authController = {
 
@@ -49,6 +86,14 @@ const authController = {
           message: 'NIN and email are required'
         });
       }
+      
+      // Validate if the email is from an educational institution
+      if (!isEducationalEmail(email)) {
+        return res.status(400).json({
+          status: false,
+          message: 'Only educational email addresses are allowed'
+        });
+      }
 
       const existingUser = await db.findOne('users', { email });
       if (existingUser) {
@@ -67,6 +112,21 @@ const authController = {
       }
 
       if (existingNin && existingNin.status === 'PENDING') {
+        // Check if user already has a tag, if not, generate one
+        if (!existingNin.user_tag) {
+          // Generate a unique user tag for transfers
+          let userTag = generateUserTag();
+          // Check if the tag already exists
+          let existingTag = await db.findOne('users', { user_tag: userTag });
+          while (existingTag) {
+            userTag = generateUserTag();
+            existingTag = await db.findOne('users', { user_tag: userTag });
+          }
+          
+          // Update the user with the new tag
+          await db.updateOne('users', { user_tag: userTag }, { id: existingNin.id });
+        }
+        
         const code = generateVerificationCode();
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
@@ -102,6 +162,15 @@ const authController = {
         return dateString; // Return original if format is unexpected
       };
 
+      // Generate a unique user tag for transfers
+      let userTag = generateUserTag();
+      // Check if the tag already exists
+      let existingTag = await db.findOne('users', { user_tag: userTag });
+      while (existingTag) {
+        userTag = generateUserTag();
+        existingTag = await db.findOne('users', { user_tag: userTag });
+      }
+
       const user_data = {
         first_name: userDetail.nin_data.firstname,
         email: email,
@@ -112,7 +181,9 @@ const authController = {
         photo: userDetail.nin_data.photo,
         address: userDetail.nin_data.residence_address,
         state_of_origin: userDetail.nin_data.self_origin_state,
-        status: 'PENDING'
+        status: 'PENDING',
+        user_tag: userTag,
+        created_at: new Date() // Explicitly set creation date for expiry tracking
       }
 
       const inserted = await db.insertOne("users", user_data);
@@ -125,7 +196,6 @@ const authController = {
       await db.insertOne('wallets', {
         user_id: inserted,
         naira_balance: 0,
-        usd_balance: 0
       });
 
       const code = generateVerificationCode();

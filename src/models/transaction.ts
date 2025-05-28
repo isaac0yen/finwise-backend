@@ -3,7 +3,9 @@ export enum TransactionType {
   DEPOSIT = 'DEPOSIT',
   WITHDRAWAL = 'WITHDRAWAL',
   TRANSFER_SENT = 'TRANSFER_SENT',
-  TRANSFER_RECEIVED = 'TRANSFER_RECEIVED'
+  TRANSFER_RECEIVED = 'TRANSFER_RECEIVED',
+  BUY = 'BUY',
+  SELL = 'SELL'
 }
 
 export interface Transaction {

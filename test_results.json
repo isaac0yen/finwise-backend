@@ -1,8 +1,11 @@
 {
+  "3. Logging In User": "Completed",
   "4. Initializing Deposit": "Completed",
-  "4. Initialize Deposit Response": {
-    "status": true,
-    "authorization_url": "https://checkout.paystack.com/5009tc7gwr4wlem",
-    "reference": "wmbu71bmyx"
+  "4. Initialize Deposit Error": {
+    "status": false,
+    "message": "Invalid token",
+    "headers": {
+      "WWW-Authenticate": "Bearer"
+    }
   }
 }

@@ -18,7 +18,8 @@
     {"name": "Deposit", "description": "Fiat deposit operations"},
     {"name": "Transactions", "description": "User transaction history"},
     {"name": "Transfer", "description": "Wallet-to-wallet transfers"},
-    {"name": "Withdrawal", "description": "Fiat withdrawal operations"}
+    {"name": "Withdrawal", "description": "Fiat withdrawal operations"},
+    {"name": "UniversityTokens", "description": "Nigerian University Token Trading operations"}
   ],
   "components": {
     "schemas": {
@@ -180,7 +181,7 @@
       },
       "TransactionType": {
         "type": "string",
-        "enum": ["DEPOSIT", "WITHDRAWAL", "TRANSFER_SENT", "TRANSFER_RECEIVED"]
+        "enum": ["DEPOSIT", "WITHDRAWAL", "TRANSFER_SENT", "TRANSFER_RECEIVED", "BUY", "SELL"]
       },
       "TransactionStatus": {
         "type": "string",
@@ -194,6 +195,11 @@
           "user_id": { "type": "integer", "example": 1 },
           "type": { "$ref": "#/components/schemas/TransactionType" },
           "amount": { "type": "number", "format": "float", "example": 500.00 },
+          "token_id": { "type": "integer", "nullable": true, "example": 1 },
+          "token_quantity": { "type": "number", "format": "float", "nullable": true, "example": 5.0 },
+          "token_price": { "type": "number", "format": "float", "nullable": true, "example": 100.00 },
+          "fee": { "type": "number", "format": "float", "nullable": true, "example": 10.00 },
+          "profit_loss": { "type": "number", "format": "float", "nullable": true, "example": 100.00 },
           "status": { "$ref": "#/components/schemas/TransactionStatus" },
           "reference": { "type": "string", "nullable": true, "example": "txn_123abc" },
           "description": { "type": "string", "nullable": true, "example": "Monthly subscription" },
@@ -242,6 +248,121 @@
             "type": "string",
             "description": "Recipient bank account number",
             "example": "0123456789"
+          }
+        }
+      },
+      "UniversityToken": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 1 },
+          "name": { "type": "string", "example": "University of Lagos" },
+          "symbol": { "type": "string", "example": "UNILAG" },
+          "institution": { "type": "string", "example": "University of Lagos" },
+          "totalSupply": { "type": "number", "format": "float", "example": 1000000 },
+          "circulatingSupply": { "type": "number", "format": "float", "example": 100000 },
+          "initialPrice": { "type": "number", "format": "float", "example": 100 },
+          "currentPrice": { "type": "number", "format": "float", "example": 105.50 },
+          "priceChange24h": { "type": "number", "format": "float", "example": 5.5 },
+          "volume24h": { "type": "number", "format": "float", "example": 50000 }
+        }
+      },
+      "TokenTransaction": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 1 },
+          "type": { "type": "string", "enum": ["BUY", "SELL"], "example": "BUY" },
+          "tokenSymbol": { "type": "string", "example": "UNILAG" },
+          "tokenName": { "type": "string", "example": "University of Lagos" },
+          "quantity": { "type": "number", "format": "float", "example": 10 },
+          "price": { "type": "number", "format": "float", "example": 100 },
+          "amount": { "type": "number", "format": "float", "example": 1000 },
+          "fee": { "type": "number", "format": "float", "example": 0 },
+          "profitLoss": { "type": "number", "format": "float", "example": 0 },
+          "status": { "type": "string", "enum": ["PENDING", "COMPLETED", "FAILED"], "example": "COMPLETED" },
+          "description": { "type": "string", "example": "Bought 10 UNILAG tokens at ₦100 each." },
+          "date": { "type": "string", "format": "date-time" }
+        }
+      },
+      "TokenPortfolio": {
+        "type": "object",
+        "properties": {
+          "nairaBalance": { "type": "number", "format": "float", "example": 5000 },
+          "tokens": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "quantity": { "type": "number", "format": "float", "example": 10 },
+                "averageBuyPrice": { "type": "number", "format": "float", "example": 100 },
+                "currentPrice": { "type": "number", "format": "float", "example": 105.50 },
+                "currentValue": { "type": "number", "format": "float", "example": 1055 },
+                "totalInvested": { "type": "number", "format": "float", "example": 1000 },
+                "unrealizedProfit": { "type": "number", "format": "float", "example": 55 },
+                "profitPercentage": { "type": "number", "format": "float", "example": 5.5 }
+              }
+            }
+          },
+          "totalInvested": { "type": "number", "format": "float", "example": 2000 },
+          "totalCurrentValue": { "type": "number", "format": "float", "example": 2200 },
+          "realizedProfits": { "type": "number", "format": "float", "example": 300 },
+          "unrealizedProfits": { "type": "number", "format": "float", "example": 200 },
+          "totalFeesPaid": { "type": "number", "format": "float", "example": 30 }
+        }
+      },
+      "TokenMarketData": {
+        "type": "object",
+        "properties": {
+          "prices": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "current": { "type": "number", "format": "float", "example": 105.50 },
+                "change24h": { "type": "number", "format": "float", "example": 5.5 },
+                "volume24h": { "type": "number", "format": "float", "example": 50000 }
+              }
+            }
+          },
+          "marketTrends": {
+            "type": "object",
+            "properties": {
+              "topGainers": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "symbol": { "type": "string", "example": "UNILAG" },
+                    "name": { "type": "string", "example": "University of Lagos" },
+                    "change": { "type": "number", "format": "float", "example": 5.5 },
+                    "price": { "type": "number", "format": "float", "example": 105.50 }
+                  }
+                }
+              },
+              "topLosers": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "symbol": { "type": "string", "example": "UNIBEN" },
+                    "name": { "type": "string", "example": "University of Benin" },
+                    "change": { "type": "number", "format": "float", "example": -3.2 },
+                    "price": { "type": "number", "format": "float", "example": 81.80 }
+                  }
+                }
+              },
+              "mostTraded": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "symbol": { "type": "string", "example": "UI" },
+                    "name": { "type": "string", "example": "University of Ibadan" },
+                    "volume": { "type": "number", "format": "float", "example": 100000 },
+                    "price": { "type": "number", "format": "float", "example": 105 }
+                  }
+                }
+              }
+            }
           }
         }
       },
@@ -326,6 +447,306 @@
     }
   },
   "paths": {
+    "/token/all": {
+      "get": {
+        "tags": ["UniversityTokens"],
+        "summary": "Get all available university tokens",
+        "description": "Retrieves a list of all available university tokens with their current prices",
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": true },
+                    "tokens": { 
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/UniversityToken" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    },
+    "/token/market/prices": {
+      "get": {
+        "tags": ["UniversityTokens"],
+        "summary": "Get market data for university tokens",
+        "description": "Retrieves current prices, 24h changes, top gainers, top losers, and most traded tokens",
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": true },
+                    "prices": { "$ref": "#/components/schemas/TokenMarketData/properties/prices" },
+                    "marketTrends": { "$ref": "#/components/schemas/TokenMarketData/properties/marketTrends" }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    },
+    "/token/buy": {
+      "post": {
+        "tags": ["UniversityTokens"],
+        "summary": "Buy university tokens",
+        "description": "Purchase university tokens using naira from wallet balance",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["tokenId", "quantity", "price"],
+                "properties": {
+                  "tokenId": { "type": "integer", "example": 1 },
+                  "quantity": { "type": "number", "format": "float", "example": 10 },
+                  "price": { "type": "number", "format": "float", "example": 100 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tokens purchased successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "Tokens purchased successfully." },
+                    "transaction": {
+                      "type": "object",
+                      "properties": {
+                        "tokenSymbol": { "type": "string", "example": "UNILAG" },
+                        "quantity": { "type": "number", "format": "float", "example": 10 },
+                        "price": { "type": "number", "format": "float", "example": 100 },
+                        "totalCost": { "type": "number", "format": "float", "example": 1000 },
+                        "newBalance": { "type": "number", "format": "float", "example": 10 }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "500": {
+            "description": "Server error",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    },
+    "/token/sell": {
+      "post": {
+        "tags": ["UniversityTokens"],
+        "summary": "Sell university tokens",
+        "description": "Sell university tokens for naira, with 10% fee on profits",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["tokenId", "quantity", "price"],
+                "properties": {
+                  "tokenId": { "type": "integer", "example": 1 },
+                  "quantity": { "type": "number", "format": "float", "example": 10 },
+                  "price": { "type": "number", "format": "float", "example": 105 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tokens sold successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "Tokens sold successfully." },
+                    "transaction": {
+                      "type": "object",
+                      "properties": {
+                        "tokenSymbol": { "type": "string", "example": "UNILAG" },
+                        "quantity": { "type": "number", "format": "float", "example": 10 },
+                        "price": { "type": "number", "format": "float", "example": 105 },
+                        "totalSaleValue": { "type": "number", "format": "float", "example": 1050 },
+                        "profit": { "type": "number", "format": "float", "example": 50 },
+                        "fee": { "type": "number", "format": "float", "example": 5 },
+                        "netAmount": { "type": "number", "format": "float", "example": 1045 },
+                        "newBalance": { "type": "number", "format": "float", "example": 0 }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "500": {
+            "description": "Server error",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    },
+    "/token/portfolio": {
+      "get": {
+        "tags": ["UniversityTokens"],
+        "summary": "Get user's token portfolio",
+        "description": "Retrieves the user's token holdings, balances, and profit/loss information",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Portfolio retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": true },
+                    "portfolio": { "$ref": "#/components/schemas/TokenPortfolio" },
+                    "currentPrices": {
+                      "type": "object",
+                      "additionalProperties": { "type": "number", "format": "float" }
+                    },
+                    "profitAnalysis": {
+                      "type": "object",
+                      "properties": {
+                        "bestPerforming": { "type": "string", "nullable": true, "example": "UNILAG" },
+                        "worstPerforming": { "type": "string", "nullable": true, "example": "UNIBEN" },
+                        "totalROI": { "type": "number", "format": "float", "example": 15.5 }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "500": {
+            "description": "Server error",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    },
+    "/token/transactions": {
+      "get": {
+        "tags": ["UniversityTokens"],
+        "summary": "Get token transaction history",
+        "description": "Retrieves the user's token transaction history (buy/sell)",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Transaction history retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": true },
+                    "transactions": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/TokenTransaction" }
+                    },
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "totalVolume": { "type": "number", "format": "float", "example": 10000 },
+                        "totalFees": { "type": "number", "format": "float", "example": 50 },
+                        "totalTrades": { "type": "integer", "example": 15 },
+                        "profitableTrades": { "type": "integer", "example": 10 }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "500": {
+            "description": "Server error",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    },
+    "/token/admin/initialize": {
+      "post": {
+        "tags": ["UniversityTokens", "Admin"],
+        "summary": "Initialize university tokens (admin only)",
+        "description": "Initializes the university tokens in the database if they don't already exist",
+        "responses": {
+          "200": {
+            "description": "Tokens initialized successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "University tokens initialized successfully" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          },
+          "500": {
+            "description": "Server error",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    },
     "/admin/withdrawals/pending": {
       "get": {
         "tags": ["Admin"],

@@ -39,7 +39,6 @@ const withdrawalController = {
         res.status(400).json({ status: false, message: 'Insufficient Naira balance' });
         return;
       }
-      // Add checks for other currencies like USD if wallet.usd_balance exists
 
       // Log pending withdrawal
       const withdrawalRecordId = await db.insertOne('pending_withdrawals', {
