@@ -23,7 +23,7 @@ const depositController = {
       await db.insertOne('pending_deposits', {
         user_id: userId,
         wallet_id: wallet.id,
-        amount,
+        amount: amount * 0.985,
         paystack_reference: reference,
         status: 'PENDING',
       });
